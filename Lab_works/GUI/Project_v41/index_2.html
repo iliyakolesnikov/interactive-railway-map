@@ -1305,7 +1305,7 @@ const LAYER_MAP = {
 function saveFilters() {
   const state = {};
   document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
-    state[cb.dataset.layer] = cb.checked;
+    if (cb.dataset.layer) state[cb.dataset.layer] = cb.checked;
   });
   localStorage.setItem('mjd-filters', JSON.stringify(state));
 }
@@ -1315,21 +1315,22 @@ function applyFilters() {
   try { saved = JSON.parse(localStorage.getItem('mjd-filters') || '{}'); } catch(e) {}
   document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
     const key = cb.dataset.layer;
-    if (key in saved) {
-      cb.checked = saved[key];
-      const layers = LAYER_MAP[key];
-      const arr = Array.isArray(layers) ? layers : [layers];
-      arr.forEach(lg => {
-        if (cb.checked) LG[lg].addTo(map);
-        else map.removeLayer(LG[lg]);
-      });
-    }
+    if (!key || !(key in saved)) return;
+    cb.checked = saved[key];
+    const layers = LAYER_MAP[key];
+    if (!layers) return;
+    const arr = Array.isArray(layers) ? layers : [layers];
+    arr.forEach(lg => {
+      if (cb.checked) LG[lg].addTo(map);
+      else map.removeLayer(LG[lg]);
+    });
   });
 }
 
 document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
   cb.addEventListener('change', () => {
     const key = cb.dataset.layer;
+    if (!key || !LAYER_MAP[key]) { saveFilters(); return; }
     const layers = LAYER_MAP[key];
     const arr = Array.isArray(layers) ? layers : [layers];
     arr.forEach(lg => {

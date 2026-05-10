@@ -15,7 +15,7 @@ python3 -m http.server 8080
 # then open http://localhost:8080/index_2.html
 ```
 
-## Regenerating Infrastructure Data
+## Regenerating Data
 
 Full pipeline (run from `Project_v41/`):
 
@@ -39,6 +39,13 @@ print('mjd_infra_data.js обновлён')
 
 `gen_mjd.py` использует `osm_lookup.json` для точных координат (77%+ объектов). Объекты с `snap: false` не смещаются к линиям в браузере.
 
+```bash
+# 4. Скачать полную сеть МЖД (пути + все станции из OSM, ~5–8 мин)
+python3 tools/fetch_mjd_network.py   # → mjd_osm_network.js (в .gitignore)
+```
+
+`mjd_osm_network.js` (~1.8 МБ) содержит `MJD_OSM_NETWORK` (6399 участков, 84k точек) и `MJD_OSM_STATIONS` (2934 станции/платформы с именами). Файл в `.gitignore` — регенерировать при обновлении данных OSM.
+
 ## Architecture
 
 ### Data Flow
@@ -59,7 +66,7 @@ All application code lives in one file, divided into sections marked with `// ==
 | `ГЕОМЕТРИЯ` | Catmull-Rom spline smoothing (`smoothPolyline`), snap-to-line (`snapObjectsToPolylines`) |
 | `КАРТА` | Leaflet map init, tile layer, theme switching |
 | `СЛОИ` | `LG` object — one `L.layerGroup` per object type |
-| `ЛИНИИ НА КАРТЕ` | МЦК ring, Большое кольцо, 10 radial polylines in `RADIALS_RAW` |
+| `ЛИНИИ НА КАРТЕ` | OSM rail network (`LG.osmNetwork`), OSM stations (`LG.osmStations`), МЦК ring, Большое кольцо, 10 radial polylines in `RADIALS_RAW`, МЦД (from `mjd_tracks_data.js`) |
 | `ИКОНКИ` | `mkIcon()`, `mkStationIcon()`, etc. |
 | `МАРКЕРЫ` | `addMarkers(arr)` — adds all objects to their layer groups |
 | `INFO PANEL` | `openInfoPanel()`, `renderTab()`, `renderParams/Live/Sched()` |
@@ -77,6 +84,8 @@ All application code lives in one file, divided into sections marked with `// ==
 - `markerMap` — `{id → {marker, data}}` for flyTo on search result click
 - `LG` — `{type → L.layerGroup}` — all visible layers
 - `MJD_INFRA` — loaded from `mjd_infra_data.js`; split into `INFRA_PASS`, `INFRA_HALT`, `INFRA_NODE`, etc.
+- `MJD_MCD` — loaded from `mjd_tracks_data.js`; МЦД route polylines D1–D4
+- `MJD_OSM_NETWORK` / `MJD_OSM_STATIONS` — loaded from `mjd_osm_network.js` (gitignored); full rail network and all named stations from OSM
 
 ### Object Schema
 

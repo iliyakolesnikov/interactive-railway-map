@@ -539,6 +539,8 @@ body.resizing #map {
     <div class="legend-item"><span class="filter-dot" style="background:#e91e8c"></span>МЦД-2 Нахабино–Подольск</div>
     <div class="legend-item"><span class="filter-dot" style="background:#4caf50"></span>МЦД-3 Крюково–Раменское</div>
     <div class="legend-item"><span class="filter-dot" style="background:#9c27b0"></span>МЦД-4 Апрелевка–Железнодорожная</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД (OSM)</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#c0392b"></span>Станции · <span class="filter-dot" style="background:#7f8c8d"></span>Платформы (OSM)</div>
     <div class="legend-item">🚉 Вокзалы &nbsp; ⚙️ Депо / ТЧ &nbsp; 📦 Грузовые</div>
     <div class="legend-item">🔀 Сортировочные &nbsp; 🏭 Терминалы</div>
   </div>
@@ -563,6 +565,8 @@ body.resizing #map {
     <label class="filter-item"><input type="checkbox" checked data-layer="node"><span class="filter-dot" style="background:#c0392b"></span>Узловые станции</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="depot_vag"><span class="filter-dot" style="background:#8e44ad"></span>Вагонные депо</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="mcd"><span class="filter-dot" style="background:#9c27b0"></span>МЦД (Д1–Д4)</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Все пути МЖД (OSM)</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="osmStations"><span class="filter-dot" style="background:#c0392b"></span>Все станции (OSM)</label>
     <label class="filter-item"><input type="checkbox" id="cb-orm">Подложка ОЖД (zoom ≥13)</label>
     </div>
   </div>
@@ -610,6 +614,7 @@ body.resizing #map {
 <script src="config.js"></script>
 <script src="mjd_infra_data.js"></script>
 <script src="mjd_tracks_data.js"></script>
+<script src="mjd_osm_network.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 // ===== ДАННЫЕ =====
@@ -925,6 +930,8 @@ applyTheme(saved !== 'light');
 
 // ===== СЛОИ =====
 const LG = {
+  osmNetwork:  L.layerGroup().addTo(map),  // самый нижний слой
+  osmStations: L.layerGroup().addTo(map),
   radial:   L.layerGroup().addTo(map),
   bigring:  L.layerGroup().addTo(map),
   mccRing:  L.layerGroup().addTo(map),
@@ -948,6 +955,35 @@ const TYPE_LG = {
 
 // ===== ЛИНИИ НА КАРТЕ =====
 const RAILWAY_LINES = []; // для кликабельности
+
+// OSM rail network — самый нижний слой, не интерактивный
+if (typeof MJD_OSM_NETWORK !== 'undefined') {
+  const segs = [];
+  let cur = [];
+  for (const pt of MJD_OSM_NETWORK) {
+    if (pt === null) { if (cur.length >= 2) segs.push(cur); cur = []; }
+    else cur.push(pt);
+  }
+  if (cur.length >= 2) segs.push(cur);
+  if (segs.length) {
+    L.polyline(segs, {color:'#8b7355', weight:1.5, opacity:0.5, interactive:false}).addTo(LG.osmNetwork);
+  }
+}
+
+// OSM станции — маленькие кружки
+if (typeof MJD_OSM_STATIONS !== 'undefined') {
+  MJD_OSM_STATIONS.forEach(st => {
+    const isStation = st.type === 'station';
+    L.circleMarker([st.lat, st.lon], {
+      radius:      isStation ? 4 : 2.5,
+      color:       '#fff',
+      weight:      1,
+      fillColor:   isStation ? '#c0392b' : '#7f8c8d',
+      fillOpacity: 0.85,
+    }).bindTooltip(st.name, {direction:'top', offset:[0,-4]})
+      .addTo(LG.osmStations);
+  });
+}
 
 // МЦК кольцо (сглаженное, станции привязаны к этой линии)
 const mccLine = L.polyline(mccRingSmooth, {color:'#e04030',weight:4,opacity:0.9}).addTo(LG.mccRing);
@@ -1302,6 +1338,8 @@ const LAYER_MAP = {
   halt: 'halt',
   node: 'node',
   mcd:  'mcd',
+  osmNetwork:  'osmNetwork',
+  osmStations: 'osmStations',
 };
 function saveFilters() {
   const state = {};
@@ -1446,23 +1484,31 @@ setupSidebarResize();
 // ===== ЗУМ-ЗАВИСИМАЯ ВИДИМОСТЬ =====
 function updateZoomVisibility() {
   const z = map.getZoom();
-  // Читаем текущее состояние чекбоксов фильтров
-  const haltOn  = document.querySelector('[data-layer="halt"]')?.checked ?? true;
-  const nodeOn  = document.querySelector('[data-layer="node"]')?.checked ?? true;
-  const passOn  = document.querySelector('[data-layer="pass"]')?.checked ?? true;
+  const haltOn    = document.querySelector('[data-layer="halt"]')?.checked ?? true;
+  const nodeOn    = document.querySelector('[data-layer="node"]')?.checked ?? true;
+  const passOn    = document.querySelector('[data-layer="pass"]')?.checked ?? true;
+  const osmStaOn  = document.querySelector('[data-layer="osmStations"]')?.checked ?? true;
 
-  if (z < 11) {
-    if (haltOn)  map.removeLayer(LG.halt);
-    if (nodeOn)  map.removeLayer(LG.node);
-    if (passOn)  map.removeLayer(LG.pass);
+  if (z < 10) {
+    if (haltOn)   map.removeLayer(LG.halt);
+    if (nodeOn)   map.removeLayer(LG.node);
+    if (passOn)   map.removeLayer(LG.pass);
+    if (osmStaOn) map.removeLayer(LG.osmStations);
+  } else if (z < 11) {
+    if (haltOn)   map.removeLayer(LG.halt);
+    if (nodeOn)   map.removeLayer(LG.node);
+    if (passOn)   map.removeLayer(LG.pass);
+    if (osmStaOn) LG.osmStations.addTo(map);
   } else if (z < 13) {
-    if (haltOn)  map.removeLayer(LG.halt);
-    if (nodeOn)  LG.node.addTo(map);
-    if (passOn)  LG.pass.addTo(map);
+    if (haltOn)   map.removeLayer(LG.halt);
+    if (nodeOn)   LG.node.addTo(map);
+    if (passOn)   LG.pass.addTo(map);
+    if (osmStaOn) LG.osmStations.addTo(map);
   } else {
-    if (haltOn)  LG.halt.addTo(map);
-    if (nodeOn)  LG.node.addTo(map);
-    if (passOn)  LG.pass.addTo(map);
+    if (haltOn)   LG.halt.addTo(map);
+    if (nodeOn)   LG.node.addTo(map);
+    if (passOn)   LG.pass.addTo(map);
+    if (osmStaOn) LG.osmStations.addTo(map);
   }
 }
 map.on('zoomend', updateZoomVisibility);

@@ -534,6 +534,10 @@ body.resizing #map {
     <div class="legend-item"><span class="filter-dot" style="background:#e04030"></span>МЦК (Малое кольцо)</div>
     <div class="legend-item"><span class="filter-dot" style="background:#f39c12"></span>Большое кольцо</div>
     <div id="radial-legend-container"></div>
+    <div class="legend-item"><span class="filter-dot" style="background:#f7b500"></span>МЦД-1 Одинцово–Лобня</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#e91e8c"></span>МЦД-2 Нахабино–Подольск</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#4caf50"></span>МЦД-3 Крюково–Раменское</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#9c27b0"></span>МЦД-4 Апрелевка–Железнодорожная</div>
     <div class="legend-item">🚉 Вокзалы &nbsp; ⚙️ Депо / ТЧ &nbsp; 📦 Грузовые</div>
     <div class="legend-item">🔀 Сортировочные &nbsp; 🏭 Терминалы</div>
   </div>
@@ -557,6 +561,8 @@ body.resizing #map {
     <label class="filter-item"><input type="checkbox" checked data-layer="halt"><span class="filter-dot" style="background:#7f8c8d"></span>Остановочные пункты</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="node"><span class="filter-dot" style="background:#c0392b"></span>Узловые станции</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="depot_vag"><span class="filter-dot" style="background:#8e44ad"></span>Вагонные депо</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mcd"><span class="filter-dot" style="background:#9c27b0"></span>МЦД (Д1–Д4)</label>
+    <label class="filter-item"><input type="checkbox" id="cb-orm">Подложка ОЖД (zoom ≥13)</label>
     </div>
   </div>
   <div class="resize-handle" id="left-resize-handle" aria-hidden="true"></div>
@@ -602,6 +608,7 @@ body.resizing #map {
 
 <script src="config.js"></script>
 <script src="mjd_infra_data.js"></script>
+<script src="mjd_tracks_data.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 // ===== ДАННЫЕ =====
@@ -930,6 +937,7 @@ const LG = {
   pass:     L.layerGroup().addTo(map),
   halt:     L.layerGroup().addTo(map),
   node:     L.layerGroup().addTo(map),
+  mcd:      L.layerGroup().addTo(map),
 };
 const TYPE_LG = {
   station:'stations', mcc:'mcc', freight:'freight',
@@ -971,6 +979,19 @@ if (radialContainer) {
     item.className = 'legend-item';
     item.innerHTML = `<span class="legend-color" style="background:${r.color}"></span><span>${r.name}</span>`;
     radialContainer.appendChild(item);
+  });
+}
+
+// МЦД
+if (typeof MJD_MCD !== 'undefined') {
+  Object.entries(MJD_MCD).forEach(([key, mcd]) => {
+    const pl = L.polyline(mcd.coords, {
+      color: mcd.color, weight: 5, opacity: 0.6, dashArray: '8 4'
+    }).addTo(LG.mcd);
+    pl._railwayName = mcd.name;
+    pl._railwayColor = mcd.color;
+    pl.bindTooltip(`<b>${mcd.name}</b><br><span style="color:var(--accent);font-size:10px">МЦД</span>`, {direction:'top',offset:[0,-6]});
+    RAILWAY_LINES.push(pl);
   });
 }
 
@@ -1279,6 +1300,7 @@ const LAYER_MAP = {
   pass: 'pass',
   halt: 'halt',
   node: 'node',
+  mcd:  'mcd',
 };
 function saveFilters() {
   const state = {};
@@ -1462,8 +1484,29 @@ updateStatus();
 map.on('mousemove', e => {
   document.getElementById('sb-coords').textContent = e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4);
 });
+// OpenRailwayMap tile layer
+const ormLayer = L.tileLayer(
+  'https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
+  { attribution: '© OpenRailwayMap', maxZoom: 19, opacity: 0.7, subdomains: ['a','b','c'] }
+);
+let ormEnabled = false;
+function updateOrmVisibility() {
+  if (!ormEnabled) return;
+  if (map.getZoom() >= 13) {
+    if (!map.hasLayer(ormLayer)) ormLayer.addTo(map);
+  } else {
+    if (map.hasLayer(ormLayer)) map.removeLayer(ormLayer);
+  }
+}
+document.getElementById('cb-orm').addEventListener('change', function() {
+  ormEnabled = this.checked;
+  if (!ormEnabled && map.hasLayer(ormLayer)) map.removeLayer(ormLayer);
+  else updateOrmVisibility();
+});
+
 map.on('zoomend', () => {
   document.getElementById('sb-zoom').textContent = 'МАСШТАБ: '+map.getZoom();
+  updateOrmVisibility();
 });
 document.getElementById('sb-count').textContent = 'ОБЪЕКТОВ: '+ALL.length;
 });

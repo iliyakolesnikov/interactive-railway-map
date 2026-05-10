@@ -66,7 +66,7 @@ def main():
     print("Скачиваем станции/платформы...", end=" ", flush=True)
     q_sta = """[out:json][timeout:180];
 (
-  node["railway"~"^(station|halt)$"](51.0,33.0,57.5,43.0);
+  node["railway"~"^(station|halt)$"]["station"!="subway"]["station"!="monorail"](51.0,33.0,57.5,43.0);
 );
 out body;"""
     res = overpass(q_sta, timeout_http=200)
@@ -75,11 +75,17 @@ out body;"""
         stations = []
     else:
         raw_sta = res["elements"]
+        METRO_KEYWORDS = ("метрополитен", "metro", "метро", "монорельс", "monorail", "мцк", "mcc")
         stations = []
         for el in raw_sta:
             tags = el.get("tags", {})
             name = tags.get("name:ru") or tags.get("name") or ""
             if not name:
+                continue
+            # Исключить метро, МЦК и монорельс по тегам
+            network  = (tags.get("network", "") + tags.get("network:ru", "")).lower()
+            operator = tags.get("operator", "").lower()
+            if any(kw in network or kw in operator for kw in METRO_KEYWORDS):
                 continue
             stations.append({
                 "lat": round(el["lat"], 5),

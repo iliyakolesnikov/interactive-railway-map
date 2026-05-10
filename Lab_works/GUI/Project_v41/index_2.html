@@ -986,7 +986,7 @@ if (radialContainer) {
 if (typeof MJD_MCD !== 'undefined') {
   Object.entries(MJD_MCD).forEach(([key, mcd]) => {
     const pl = L.polyline(mcd.coords, {
-      color: mcd.color, weight: 5, opacity: 0.6, dashArray: '8 4'
+      color: mcd.color, weight: 2.5, opacity: 0.75, dashArray: '8 4'
     }).addTo(LG.mcd);
     pl._railwayName = mcd.name;
     pl._railwayColor = mcd.color;

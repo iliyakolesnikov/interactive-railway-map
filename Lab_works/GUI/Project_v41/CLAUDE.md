@@ -17,13 +17,27 @@ python3 -m http.server 8080
 
 ## Regenerating Infrastructure Data
 
-`gen_mjd.py` generates station/halt/node coordinates by linearly interpolating along corridor waypoints, then writes:
-- `_generated_infra.json` — raw JSON (intermediate)
-- The output must be manually copied into `mjd_infra_data.js` as `const MJD_INFRA = {...};`
+Full pipeline (run from `Project_v41/`):
 
 ```bash
-python3 gen_mjd.py
+# 1. Скачать актуальные координаты из OSM (нужен интернет, ~1–2 мин)
+python3 tools/fetch_osm_railway.py   # → osm_lookup.json (в .gitignore)
+
+# 2. Сгенерировать данные (OSM как приоритет, интерполяция как fallback)
+python3 gen_mjd.py                   # → _generated_infra.json (в .gitignore)
+
+# 3. Обновить JS-файл данных
+python3 -c "
+import json
+with open('_generated_infra.json', encoding='utf-8') as f:
+    data = json.dumps(json.load(f), ensure_ascii=False)
+with open('mjd_infra_data.js', 'w', encoding='utf-8') as f:
+    f.write('const MJD_INFRA = ' + data + ';')
+print('mjd_infra_data.js обновлён')
+"
 ```
+
+`gen_mjd.py` использует `osm_lookup.json` для точных координат (77%+ объектов). Объекты с `snap: false` не смещаются к линиям в браузере.
 
 ## Architecture
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Generate INFRA arrays — interpolate coords along rail corridors."""
-import json
+"""Generate INFRA arrays — real OSM coords where available, interpolation as fallback."""
+import json, os
 
 def chain_stops(waypoints, stops):
     """waypoints: [(lat,lng), ...]; stops: [(name, kind), ...]"""
@@ -442,12 +442,92 @@ DEPOT_VAG = [
     ("Вагонное депо Смоленск", Smolensk[0], Smolensk[1]),
 ]
 
+def load_osm_lookup():
+    """Загружает osm_lookup.json если он существует."""
+    import os
+    path = os.path.join(os.path.dirname(__file__), "osm_lookup.json")
+    if not os.path.exists(path):
+        print("osm_lookup.json не найден — используем только интерполяцию.")
+        print("Запустите: python3 tools/fetch_osm_railway.py")
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    print(f"Загружено {len(data)} OSM-записей из osm_lookup.json")
+    return data
+
+def make_desc(kind, osm):
+    """Формирует осмысленное описание объекта."""
+    line = osm.get("network", "").replace("Московская железная дорога", "МЖД").strip()
+    start = osm.get("start_date", "")
+    if kind == "halt":
+        base = f"Остановочный пункт{(' ' + line) if line else ''}."
+        if start:
+            base += f" Открыт: {start}."
+        return base
+    if kind == "pass":
+        return f"Пассажирская станция{(' ' + line) if line else ''}."
+    if kind == "node":
+        return f"Узловая станция МЖД."
+    return "Объект инфраструктуры МЖД."
+
+def make_stats(kind, osm):
+    """Формирует stats из OSM-тегов."""
+    stats = {}
+    electrified = osm.get("electrified", "")
+    voltage = osm.get("voltage", "")
+    frequency = osm.get("frequency", "")
+    tracks = osm.get("tracks", "")
+    operator = osm.get("operator", "")
+    network = osm.get("network", "")
+    ref = osm.get("ref", "")
+    wheelchair = osm.get("wheelchair", "")
+    addr_city = osm.get("addr_city", "")
+    addr_street = osm.get("addr_street", "")
+
+    # Электрификация
+    if electrified and electrified not in ("no", ""):
+        if voltage == "3000":
+            elec_str = "3 кВ DC"
+        elif voltage == "25000":
+            elec_str = "25 кВ AC"
+        elif voltage:
+            freq_part = f" {frequency} Гц" if frequency else ""
+            elec_str = f"{int(voltage)//1000} кВ{freq_part}"
+        else:
+            elec_str = "есть"
+        stats["Электрификация"] = elec_str
+    elif electrified == "no":
+        stats["Электрификация"] = "нет (тепловозная тяга)"
+
+    if tracks:
+        stats["Кол-во путей"] = tracks
+    if ref:
+        stats["Код ЕСР"] = ref
+    if wheelchair == "yes":
+        stats["Доступность"] = "для МГН"
+    if network:
+        net = network.replace("Московская железная дорога", "МЖД")
+        if net and kind in ("pass", "halt", "node"):
+            stats["Сеть"] = net
+    if operator and operator != "ОАО «РЖД»":
+        stats["Оператор"] = operator
+    addr = " ".join(filter(None, [addr_city, addr_street]))
+    if addr:
+        stats["Адрес"] = addr
+    if kind in ("pass", "halt"):
+        stats["Статус"] = "РАБОТАЕТ"
+    return stats
+
 def main():
+    osm = load_osm_lookup()
+
     out_pass = []
     out_halt = []
     out_node = []
     seen = set()
     pid = [0]
+    osm_hits = [0]
+    osm_misses = [0]
 
     def add(name, lat, lng, kind):
         k = name.lower().replace("ё", "е").strip()
@@ -456,14 +536,29 @@ def main():
         seen.add(k)
         pid[0] += 1
         oid = f"inf{pid[0]}"
+
+        # Пробуем взять точные координаты из OSM
+        osm_rec = osm.get(k, {})
+        if osm_rec:
+            use_lat = osm_rec["lat"]
+            use_lng = osm_rec["lon"]
+            snap = False
+            osm_hits[0] += 1
+        else:
+            use_lat = round(lat, 4)
+            use_lng = round(lng, 4)
+            snap = True
+            osm_misses[0] += 1
+
         rec = {
             "id": oid,
             "type": kind,
             "name": name,
-            "lat": round(lat, 4),
-            "lng": round(lng, 4),
-            "desc": "Объект инфраструктуры МЖД (справочник).",
-            "stats": {},
+            "lat": round(use_lat, 6),
+            "lng": round(use_lng, 6),
+            "snap": snap,
+            "desc": make_desc(kind, osm_rec),
+            "stats": make_stats(kind, osm_rec),
         }
         if kind == "pass":
             out_pass.append(rec)
@@ -541,14 +636,24 @@ def main():
         seen.add(k)
         pid[0] += 1
         oid = f"inf{pid[0]}"
+        osm_rec = osm.get(k, {})
+        if osm_rec:
+            use_lat = osm_rec["lat"]
+            use_lng = osm_rec["lon"]
+            snap = False
+        else:
+            use_lat = round(lat, 4)
+            use_lng = round(lng, 4)
+            snap = True
         rec = {
             "id": oid,
             "type": kind,
             "name": name,
-            "lat": round(lat, 4),
-            "lng": round(lng, 4),
-            "desc": "Объект инфраструктуры МЖД (справочник).",
-            "stats": {},
+            "lat": round(use_lat, 6),
+            "lng": round(use_lng, 6),
+            "snap": snap,
+            "desc": "Объект инфраструктуры МЖД.",
+            "stats": make_stats(kind, osm_rec),
         }
         if kind == "sorting":
             out_sort.append(rec)
@@ -571,8 +676,13 @@ def main():
     for name, lat, lng in DEPOT_VAG:
         add_extra(name, lat, lng, "depot_vag")
 
-    print("// PASS", len(out_pass), "HALT", len(out_halt), "NODE", len(out_node), "SORT", len(out_sort), "FR", len(out_fr), "DEP", len(out_dep), "DV", len(out_dv))
-    with open("/home/s/Proga/Lab_works/GUI/_generated_infra.json", "w") as f:
+    total = len(out_pass)+len(out_halt)+len(out_node)+len(out_sort)+len(out_fr)+len(out_dep)+len(out_dv)
+    pct = round(osm_hits[0] / max(1, osm_hits[0]+osm_misses[0]) * 100)
+    print(f"// PASS {len(out_pass)} HALT {len(out_halt)} NODE {len(out_node)} SORT {len(out_sort)} FR {len(out_fr)} DEP {len(out_dep)} DV {len(out_dv)}")
+    print(f"// Всего: {total} | OSM-координаты: {osm_hits[0]} ({pct}%) | интерполяция: {osm_misses[0]}")
+
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_generated_infra.json")
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "pass": out_pass,
@@ -586,6 +696,7 @@ def main():
             f,
             ensure_ascii=False,
         )
+    print(f"Сохранено: {out_path}")
 
 if __name__ == "__main__":
     main()

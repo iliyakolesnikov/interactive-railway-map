@@ -793,13 +793,18 @@ const RADIALS = RADIALS_RAW.map(r => ({
 const MJDLINES_FOR_SNAP = [BIG_RING, ...RADIALS.map(r => r.coords)];
 const mccRingSmooth = smoothPolyline(MCC_STA.map(s => [s.lat, s.lng]), true, 12);
 
-snapObjectsToPolylines(INFRA_PASS, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_HALT, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_NODE, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_SORT_EXTRA, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_FR_EXTRA, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_DEP_EXTRA, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(INFRA_DEP_VAG, MJDLINES_FOR_SNAP);
+// Snap только для объектов без точных OSM-координат (snap !== false)
+function snapOsmAware(arr, polylines) {
+  const withSnap = arr.filter(o => o.snap !== false);
+  snapObjectsToPolylines(withSnap, polylines);
+}
+snapOsmAware(INFRA_PASS, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_HALT, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_NODE, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_SORT_EXTRA, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_FR_EXTRA, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_DEP_EXTRA, MJDLINES_FOR_SNAP);
+snapOsmAware(INFRA_DEP_VAG, MJDLINES_FOR_SNAP);
 snapObjectsToPolylines(STATIONS, MJDLINES_FOR_SNAP);
 snapObjectsToPolylines(DEPOTS, MJDLINES_FOR_SNAP);
 snapObjectsToPolylines(FREIGHT, MJDLINES_FOR_SNAP);

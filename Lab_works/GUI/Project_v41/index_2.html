@@ -424,7 +424,7 @@ body.resizing #map {
   <div id="legend-wrap">
     <div class="legend-title">Легенда</div>
     <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути</div>
-    <div class="legend-item"><svg width="9" height="8" viewBox="0 0 9 8" style="flex-shrink:0;margin-top:1px"><polygon points="4.5,0 9,8 0,8" fill="#2ecc71" opacity="0.9"/></svg>Станция</div>
+    <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="rgba(255,255,255,0.9)"/></svg>Станция</div>
     <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="#a0aec0"/></svg>Остановка</div>
   </div>
   <div id="filters-wrap">
@@ -432,7 +432,7 @@ body.resizing #map {
     <div class="filters-dropdown" id="filters-dropdown">
     <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
     <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStations"><svg width="8" height="7" viewBox="0 0 8 7" style="flex-shrink:0"><polygon points="4,0 8,7 0,7" fill="#2ecc71" opacity="0.9"/></svg>Станции</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStations"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5" cy="5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>Станции</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="mjdStops"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1"/><circle cx="5" cy="5" r="1.8" fill="#a0aec0"/></svg>Остановки</label>
     </div>
   </div>
@@ -566,9 +566,9 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
 (function() {
   const stationIcon = L.divIcon({
     className: 'mjd-icon',
-    html: '<svg width="9" height="8" viewBox="0 0 9 8"><polygon points="4.5,0 9,8 0,8" fill="#2ecc71" opacity="0.92"/></svg>',
-    iconSize: [9, 8],
-    iconAnchor: [4, 4]
+    html: '<svg width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="6.5" cy="6.5" r="2" fill="rgba(255,255,255,0.9)"/></svg>',
+    iconSize: [13, 13],
+    iconAnchor: [6, 6]
   });
   const stopIcon = L.divIcon({
     className: 'mjd-icon',

@@ -155,7 +155,9 @@ def api_add_station():
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO stations (name, lat, lon, type, line) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+        "INSERT INTO stations (id, name, lat, lon, type, line) "
+        "VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM stations), %s,%s,%s,%s,%s) "
+        "RETURNING id",
         (name, lat, lon, type_, line)
     )
     new_id = cur.fetchone()[0]

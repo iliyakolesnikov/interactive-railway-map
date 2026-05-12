@@ -27,7 +27,6 @@
   --section-text-light: #2d3748;
   --section-text-dark: #e2e8f0;
   --section-text-color: var(--section-text-dark);
-  --info-panel-top-offset: 70px;
 }
 body.theme-light {
   --bg-primary: #f0f2f5;
@@ -290,143 +289,6 @@ body.resizing #map {
 .zb:hover { border-color: var(--border-active); }
 .zb:first-child { border-radius: 4px 4px 0 0; }
 .zb:last-child { border-radius: 0 0 4px 4px; }
-/* INFO PANEL */
-#info-panel {
-  position: absolute;
-  bottom: 36px;
-  right: 16px;
-  width: 330px;
-  height: auto;
-  max-height: calc(100vh - 120px);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  z-index: 450;
-  display: none;
-  animation: slideIn 0.2s ease-out;
-  transition: height 0.3s ease, transform 0.3s ease;
-}
-@keyframes slideIn {
-  from { transform: translateX(12px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-#info-panel.show { display: block; }
-#info-panel.fullscreen {
-  top: var(--info-panel-top-offset);
-  bottom: 36px;
-  height: calc(100vh - var(--info-panel-top-offset) - 36px);
-  max-height: none;
-  width: min(420px, calc(100vw - 32px));
-}
-#ip-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-color);
-}
-#ip-header h2 {
-  font-size: 14px;
-  font-weight: 600;
-  flex: 1;
-}
-#ip-close, .ip-action {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 16px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 2px;
-}
-#ip-close { font-size: 20px; }
-#ip-close:hover, .ip-action:hover { color: var(--accent); }
-#ip-actions { display: flex; align-items: center; gap: 4px; }
-#ip-toast {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  padding: 4px 10px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  white-space: nowrap;
-}
-#ip-type {
-  font-size: 11px;
-  color: var(--accent);
-  padding: 0 14px;
-  margin-top: 4px;
-}
-/* Табы */
-#ip-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border-color);
-}
-.ip-tab {
-  flex: 1;
-  padding: 8px 0;
-  text-align: center;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  color: var(--section-text-color);
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s ease;
-}
-.ip-tab:hover { color: var(--text-primary); }
-.ip-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-#ip-body {
-  padding: 12px 14px;
-  max-height: 320px;
-  overflow-y: auto;
-  font-size: 13px;
-}
-#ip-body::-webkit-scrollbar { width: 3px; }
-#ip-body::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
-/* Таблица параметров */
-.ip-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-}
-.ip-grid .ip-label { color: var(--text-muted); font-size: 11px; }
-.ip-grid .ip-value { color: var(--text-primary); font-family: 'Share Tech Mono', monospace; font-size: 12px; text-align: right; }
-.ip-grid .ip-value.live { color: var(--live-color); }
-/* Расписание */
-.ip-sched-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 12px;
-}
-.ip-sched-item:last-child { border-bottom: none; }
-.ip-sched-time { font-family: 'Share Tech Mono', monospace; color: var(--accent); }
-.ip-sched-dest { color: var(--text-primary); }
-.ip-sched-plat { color: var(--text-muted); }
-/* Пульс */
-.live-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: var(--live-color);
-  border-radius: 50%;
-  margin-right: 6px;
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
-  70%  { box-shadow: 0 0 0 8px rgba(0,0,0,0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
-}
 /* Статус-строка */
 #statusbar {
   position: fixed;
@@ -520,6 +382,9 @@ body.resizing #map {
   transform: rotate(45deg);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
 }
+/* Станции и остановки МЖД */
+.leaflet-div-icon.mjd-icon { background: transparent; border: none; }
+.mjd-stop-icon circle:last-child { fill: #a0aec0; }
 </style>
 </head>
 <body>
@@ -533,12 +398,16 @@ body.resizing #map {
   <div id="legend-wrap">
     <div class="legend-title">Легенда</div>
     <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД</div>
+    <div class="legend-item"><svg width="12" height="11" viewBox="0 0 12 11" style="flex-shrink:0;margin-top:1px"><polygon points="6,0 12,11 0,11" fill="#2ecc71" opacity="0.9"/></svg>Станция МЖД</div>
+    <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="#a0aec0"/></svg>Остановка МЖД</div>
   </div>
   <div id="filters-wrap">
     <button class="filters-toggle" id="filters-toggle">Фильтры ▼</button>
     <div class="filters-dropdown" id="filters-dropdown">
     <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
     <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStations"><svg width="10" height="9" viewBox="0 0 10 9" style="flex-shrink:0"><polygon points="5,0 10,9 0,9" fill="#2ecc71" opacity="0.9"/></svg>Станции МЖД</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStops"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1"/><circle cx="5" cy="5" r="1.8" fill="#a0aec0"/></svg>Остановки МЖД</label>
     </div>
   </div>
   <div class="resize-handle" id="left-resize-handle" aria-hidden="true"></div>
@@ -552,25 +421,6 @@ body.resizing #map {
     <button class="zb" id="zout" title="Отдалить">−</button>
     <button class="zb" id="zreset" title="Сбросить вид">⌂</button>
     <button class="zb" id="theme-toggle" title="Сменить тему">☾</button>
-  </div>
-  <!-- INFO PANEL -->
-  <div id="info-panel">
-    <div id="ip-header">
-      <h2 id="ip-title"></h2>
-      <div id="ip-actions">
-        <button class="ip-action" id="ip-copy" title="Копировать координаты">📋</button>
-        <button class="ip-action" id="ip-maps" title="Открыть в Яндекс.Картах">🧭</button>
-        <button id="ip-close">×</button>
-      </div>
-    </div>
-    <div id="ip-toast">Скопировано</div>
-    <div id="ip-type"></div>
-    <div id="ip-tabs">
-      <div class="ip-tab active" data-tab="params">Параметры</div>
-      <div class="ip-tab" data-tab="live">Онлайн</div>
-      <div class="ip-tab" data-tab="sched">Расписание</div>
-    </div>
-    <div id="ip-body"></div>
   </div>
 </div>
 <!-- STATUS BAR -->
@@ -611,7 +461,63 @@ applyTheme(saved !== 'light');
 // ===== СЛОИ =====
 const LG = {
   osmNetwork: L.layerGroup().addTo(map),
+  mjdStations: L.layerGroup().addTo(map),
+  mjdStops: L.layerGroup().addTo(map),
 };
+
+// ===== ДАННЫЕ СТАНЦИЙ =====
+const MJD_STATIONS = [
+  {name:"Москва-Бутырская (Савёловский вокзал)",lat:55.795758,lon:37.588529,type:"Станция"},
+  {name:"Тимирязевская",lat:55.819336,lon:37.575509,type:"Остановка"},
+  {name:"Окружная",lat:55.847650,lon:37.574156,type:"Остановка"},
+  {name:"Дегунино",lat:55.865540,lon:37.573221,type:"Остановка"},
+  {name:"Бескудниково",lat:55.882192,lon:37.567543,type:"Станция"},
+  {name:"Лианозово",lat:55.898881,lon:37.548868,type:"Остановка"},
+  {name:"Марк",lat:55.904391,lon:37.538297,type:"Станция"},
+  {name:"Новодачная",lat:55.924339,lon:37.527707,type:"Остановка"},
+  {name:"Долгопрудная",lat:55.939983,lon:37.520025,type:"Остановка"},
+  {name:"Водники",lat:55.952556,lon:37.512443,type:"Остановка"},
+  {name:"Хлебниково",lat:55.952556,lon:37.512443,type:"Остановка"},
+  {name:"Шереметьевская",lat:55.952556,lon:37.512443,type:"Остановка"},
+  {name:"Аэропорт Шереметьево Север",lat:55.983294,lon:37.413610,type:"Остановка"},
+  {name:"Аэропорт Шереметьево Юг",lat:55.963854,lon:37.415829,type:"Остановка"},
+  {name:"Лобня",lat:56.013212,lon:37.484646,type:"Станция"},
+  {name:"Депо",lat:56.027817,lon:37.486102,type:"Остановка"},
+  {name:"Луговая",lat:56.027817,lon:37.486102,type:"Остановка"},
+  {name:"Некрасовская",lat:56.074418,lon:37.495879,type:"Остановка"},
+  {name:"Катуар",lat:56.090854,lon:37.504245,type:"Станция"},
+  {name:"Трудовая",lat:56.120792,lon:37.515042,type:"Остановка"},
+  {name:"Икша",lat:56.120792,lon:37.515042,type:"Станция"},
+  {name:"Морозки",lat:56.120792,lon:37.515042,type:"Остановка"},
+  {name:"Турист",lat:56.243443,lon:37.512105,type:"Остановка"},
+  {name:"Яхрома",lat:56.286491,lon:37.501815,type:"Станция"},
+  {name:"Дмитров",lat:56.337579,lon:37.510237,type:"Станция"},
+  {name:"Каналстрой",lat:56.383303,lon:37.515701,type:"Станция"},
+  {name:"75 км (им.Барсученко)",lat:56.418938,lon:37.497390,type:"Остановка"},
+  {name:"Орудьево",lat:56.445821,lon:37.519955,type:"Остановка"},
+  {name:"Вербилки",lat:56.538995,lon:37.559976,type:"Станция"},
+  {name:"Соревнование",lat:56.529056,lon:37.430049,type:"Станция"},
+  {name:"Запрудня",lat:56.560633,lon:37.393002,type:"Остановка"},
+  {name:"Темпы",lat:56.635402,lon:37.296682,type:"Остановка"},
+  {name:"Мельдино",lat:56.658677,lon:37.261749,type:"Остановка"},
+  {name:"119 км",lat:56.678479,lon:37.226737,type:"Остановка"},
+  {name:"Карманово (122 км)",lat:56.691793,lon:37.192219,type:"Остановка"},
+  {name:"Большая Волга",lat:56.726833,lon:37.136656,type:"Станция"},
+  {name:"Дубна",lat:56.745962,lon:37.201221,type:"Станция"},
+  {name:"94 км (Никулки)",lat:56.580448,lon:37.567980,type:"Остановка"},
+  {name:"Власово",lat:56.645558,lon:37.563482,type:"Остановка"},
+  {name:"Талдом",lat:56.722456,lon:37.525980,type:"Остановка"},
+  {name:"Лебзино",lat:56.769690,lon:37.419653,type:"Остановка"},
+  {name:"124 км",lat:56.809934,lon:37.382958,type:"Остановка"},
+  {name:"Савёлово",lat:56.855938,lon:37.377624,type:"Остановка"},
+  {name:"Белый городок",lat:56.949232,lon:37.538110,type:"Остановка"},
+  {name:"151 км",lat:56.999880,lon:37.566002,type:"Остановка"},
+  {name:"Стрельчиха",lat:57.024767,lon:37.589876,type:"Остановка"},
+  {name:"163 км",lat:57.089071,lon:37.667803,type:"Остановка"},
+  {name:"Скнятино",lat:57.101095,lon:37.687807,type:"Остановка"},
+  {name:"Новокатово",lat:57.178169,lon:37.746007,type:"Остановка"},
+  {name:"Эра (177 км)",lat:57.203912,lon:37.769694,type:"Остановка"},
+];
 
 // ===== ЛИНИИ НА КАРТЕ =====
 const RAILWAY_LINES = []; // для кликабельности
@@ -630,7 +536,30 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
   }
 }
 
-// OSM станции — маленькие кружки
+// ===== СТАНЦИИ МЖД НА КАРТЕ =====
+(function() {
+  const stationIcon = L.divIcon({
+    className: 'mjd-icon',
+    html: '<svg width="13" height="12" viewBox="0 0 13 12"><polygon points="6.5,0 13,12 0,12" fill="#2ecc71" opacity="0.92"/></svg>',
+    iconSize: [13, 12],
+    iconAnchor: [6, 6]
+  });
+  const stopIcon = L.divIcon({
+    className: 'mjd-icon',
+    html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.6)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="2" fill="#a0aec0"/></svg>',
+    iconSize: [11, 11],
+    iconAnchor: [5, 5]
+  });
+  for (const s of MJD_STATIONS) {
+    const isStation = s.type === 'Станция';
+    const lg = isStation ? LG.mjdStations : LG.mjdStops;
+    const icon = isStation ? stationIcon : stopIcon;
+    L.marker([s.lat, s.lon], {icon, interactive: true})
+      .bindTooltip(s.name, {permanent: false, direction: 'right', offset: [8, 0]})
+      .addTo(lg);
+  }
+})();
+
 // ===== ГРАНИЦА МОСКВЫ =====
 fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Россия&polygon_geojson=1&format=json&limit=1',
   {headers:{'Accept-Language':'ru'}})
@@ -642,149 +571,11 @@ fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Ро
   })
   .catch(()=>{});
 
-// ===== INFO PANEL =====
-let liveTimer = null;
-let currentObj = null;
-let currentTab = 'params';
-
-function openInfoPanel(obj) {
-  currentObj = obj;
-  currentTab = 'params';
-  clearInterval(liveTimer);
-
-  document.getElementById('ip-title').textContent = obj.name;
-  document.getElementById('ip-type').textContent = '';
-  const infoPanel = document.getElementById('info-panel');
-  const zoomCtrl = document.getElementById('zoom-ctrl');
-  zoomCtrl.classList.add('map-controls-horizontal');
-  infoPanel.classList.add('show', 'fullscreen');
-  const topOffset = zoomCtrl.offsetTop + zoomCtrl.offsetHeight + 8;
-  document.documentElement.style.setProperty('--info-panel-top-offset', `${topOffset}px`);
-
-  // Обновить активный таб
-  document.querySelectorAll('.ip-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === currentTab);
-  });
-  renderTab();
-
-  // Если онлайн — запустить таймер
-  if (currentTab === 'live') {
-    startLive();
-  }
-}
-
-function renderTab() {
-  const body = document.getElementById('ip-body');
-  document.querySelectorAll('.ip-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === currentTab);
-  });
-  if (currentTab === 'params') renderParams(body);
-  else if (currentTab === 'live') { renderLive(body); startLive(); }
-  else if (currentTab === 'sched') renderSched(body);
-}
-
-function renderParams(body) {
-  clearInterval(liveTimer);
-  const stats = currentObj.stats;
-  let html = '';
-  if (stats && Object.keys(stats).length) {
-    html = '<div class="ip-grid">';
-    for (const [k,v] of Object.entries(stats)) {
-      const isLive = v === 'РАБОТАЕТ' || v === 'ДА';
-      html += `<span class="ip-label">${k}</span><span class="ip-value${isLive?' live':''}">${v}</span>`;
-    }
-    html += '</div>';
-  }
-  if (currentObj.desc) {
-    html += `<div style="margin-top:${html?'12px':'0'};color:var(--text-secondary);font-size:12px;line-height:1.5">${currentObj.desc}</div>`;
-  }
-  if (!html) {
-    html = '<div style="color:var(--text-muted);font-size:12px">Справочная точка на карте.</div>';
-  }
-  body.innerHTML = html;
-}
-
-function rnd(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
-
-function renderLive(body) {
-  const o = currentObj;
-  let html = '<div style="margin-bottom:8px;padding:6px 8px;background:rgba(180,120,0,.15);border:1px solid rgba(180,120,0,.4);font-size:11px;color:#c8960a"><b>⚠ DEMO-ДАННЫЕ</b> · цифры случайны, не для оперативного применения</div>';
-  html += '<div class="ip-grid">';
-  if (o.type === 'station') {
-    html += kv('Поездов сейчас', rnd(4,14));
-    html += kv('Перрон занят', `${rnd(2,8)} из ${o.stats['Платформ']||'?'}`);
-    html += kv('Задержек', rnd(0,3));
-    html += kv('Загрузка зала', rnd(20,80)+'%');
-  } else if (o.type === 'depot') {
-    html += kv('ПС в работе', rnd(30,70));
-    html += kv('ПС в депо', rnd(10,30));
-    html += kv('На ТО', rnd(2,8));
-    html += kv('Персонал на смене', rnd(80,200)+' чел.');
-  } else {
-    html += kv('Вагонов на путях', rnd(40,150));
-    html += kv('Обраб. состав', rnd(1,6));
-    html += kv('Ожидание', rnd(0,4)+' сост.');
-    html += kv('Готово к отпр.', rnd(1,5)+' сост.');
-  }
-  html += '</div>';
-  body.innerHTML = html;
-}
-function kv(k,v) {
-  return `<span class="ip-label">${k}</span><span class="ip-value live">${v}</span>`;
-}
-
-function startLive() {
-  clearInterval(liveTimer);
-  liveTimer = setInterval(() => {
-    if (currentTab === 'live' && currentObj) {
-      renderLive(document.getElementById('ip-body'));
-    }
-  }, 180000);
-}
-
-function renderSched(body) {
-  clearInterval(liveTimer);
-  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Расписание недоступно</div>';
-}
-
-// Переключение табов
-document.querySelectorAll('.ip-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    currentTab = tab.dataset.tab;
-    if (currentTab !== 'live') clearInterval(liveTimer);
-    renderTab();
-  });
-});
-
-// Закрыть панель
-document.getElementById('ip-close').addEventListener('click', () => {
-  const infoPanel = document.getElementById('info-panel');
-  const zoomCtrl = document.getElementById('zoom-ctrl');
-  infoPanel.classList.remove('show', 'fullscreen');
-  zoomCtrl.classList.remove('map-controls-horizontal');
-  clearInterval(liveTimer);
-  currentObj = null;
-});
-
-// Копировать координаты
-document.getElementById('ip-copy').addEventListener('click', () => {
-  if (!currentObj) return;
-  navigator.clipboard.writeText(`${currentObj.lat}, ${currentObj.lng}`).then(() => {
-    const toast = document.getElementById('ip-toast');
-    toast.style.opacity = '1';
-    setTimeout(() => { toast.style.opacity = '0'; }, 1800);
-  });
-});
-
-// Открыть в Яндекс.Картах
-document.getElementById('ip-maps').addEventListener('click', () => {
-  if (!currentObj) return;
-  window.open(`https://yandex.ru/maps/?pt=${currentObj.lng},${currentObj.lat}&z=16&l=map`, '_blank');
-});
-
 // ===== ФИЛЬТРЫ =====
 const LAYER_MAP = {
   osmNetwork: 'osmNetwork',
+  mjdStations: 'mjdStations',
+  mjdStops: 'mjdStops',
 };
 function saveFilters() {
   const state = {};

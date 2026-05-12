@@ -539,7 +539,6 @@ body.resizing #map {
     <div class="filters-dropdown" id="filters-dropdown">
     <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
     <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД</label>
-    <label class="filter-item"><input type="checkbox" id="cb-orm">Подложка ОЖД</label>
     </div>
   </div>
   <div class="resize-handle" id="left-resize-handle" aria-hidden="true"></div>
@@ -896,16 +895,6 @@ updateStatus();
 map.on('mousemove', e => {
   document.getElementById('sb-coords').textContent = e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4);
 });
-// OpenRailwayMap tile layer
-const ormLayer = L.tileLayer(
-  'https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
-  { attribution: '© OpenRailwayMap', maxZoom: 19, opacity: 0.7, subdomains: ['a','b','c'] }
-);
-document.getElementById('cb-orm').addEventListener('change', function() {
-  if (this.checked) ormLayer.addTo(map);
-  else map.removeLayer(ormLayer);
-});
-
 map.on('zoomend', () => {
   document.getElementById('sb-zoom').textContent = 'МАСШТАБ: '+map.getZoom();
 });

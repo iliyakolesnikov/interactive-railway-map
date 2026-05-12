@@ -254,15 +254,7 @@ td.td-line { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-
 <body>
 <script>
 if (location.protocol === 'file:') {
-  document.addEventListener('DOMContentLoaded', () => {
-    document.body.innerHTML = `<div class="blocked">
-      <h2>ДОСТУП ЗАПРЕЩЁН</h2>
-      <p>Страница управления доступна только через сервер.<br>
-      Запустите <code>python3 server.py</code> и откройте:<br>
-      <a href="http://localhost:8080/admin.html">http://localhost:8080/admin.html</a></p>
-    </div>`;
-  });
-  throw new Error('file:// access denied');
+  location.replace('http://localhost:8080/admin.html');
 }
 </script>
 <header>

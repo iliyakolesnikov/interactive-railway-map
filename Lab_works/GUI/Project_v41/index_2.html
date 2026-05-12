@@ -532,41 +532,13 @@ body.resizing #map {
   </div>
   <div id="legend-wrap">
     <div class="legend-title">Легенда</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#e04030"></span>МЦК (Малое кольцо)</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#f39c12"></span>Большое кольцо</div>
-    <div id="radial-legend-container"></div>
-    <div class="legend-item"><span class="filter-dot" style="background:#f7b500"></span>МЦД-1 Одинцово–Лобня</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#e91e8c"></span>МЦД-2 Нахабино–Подольск</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#4caf50"></span>МЦД-3 Крюково–Раменское</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#9c27b0"></span>МЦД-4 Апрелевка–Железнодорожная</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД (OSM)</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#c0392b"></span>Станции · <span class="filter-dot" style="background:#7f8c8d"></span>Платформы (OSM)</div>
-    <div class="legend-item">🚉 Вокзалы &nbsp; ⚙️ Депо / ТЧ &nbsp; 📦 Грузовые</div>
-    <div class="legend-item">🔀 Сортировочные &nbsp; 🏭 Терминалы</div>
-  </div>
-  <div id="search-wrap">
-    <input type="text" id="search-input" placeholder="Поиск объектов…" autocomplete="off">
-    <div id="search-results"></div>
+    <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД</div>
   </div>
   <div id="filters-wrap">
     <button class="filters-toggle" id="filters-toggle">Фильтры ▼</button>
     <div class="filters-dropdown" id="filters-dropdown">
     <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
-    <label class="filter-item"><input type="checkbox" checked data-layer="stations"><span class="filter-dot" style="background:#a03020"></span>Пассажирские вокзалы</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="mcc"><span class="filter-dot" style="background:#1a5898"></span>МЦК — Малое кольцо</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="bigring"><span class="filter-dot" style="background:#f39c12"></span>Большое кольцо МЖД</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="radial"><span class="filter-dot" style="background:#e74c3c"></span>Радиальные направления</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="freight"><span class="filter-dot" style="background:#c06010"></span>Грузовые станции</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="depot"><span class="filter-dot" style="background:#7d3da0"></span>Депо и ТЧ</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="sorting"><span class="filter-dot" style="background:#128070"></span>Сортировочные станции</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="terminal"><span class="filter-dot" style="background:#a09010"></span>Терминально-складские</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="pass"><span class="filter-dot" style="background:#e67e22"></span>Пассажирские станции</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="halt"><span class="filter-dot" style="background:#7f8c8d"></span>Остановочные пункты</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="node"><span class="filter-dot" style="background:#c0392b"></span>Узловые станции</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="depot_vag"><span class="filter-dot" style="background:#8e44ad"></span>Вагонные депо</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="mcd"><span class="filter-dot" style="background:#9c27b0"></span>МЦД (Д1–Д4)</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Все пути МЖД (OSM)</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="osmStations"><span class="filter-dot" style="background:#c0392b"></span>Все станции (OSM)</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути МЖД</label>
     <label class="filter-item"><input type="checkbox" id="cb-orm">Подложка ОЖД (zoom ≥13)</label>
     </div>
   </div>
@@ -611,300 +583,9 @@ body.resizing #map {
   <span id="sb-zoom">МАСШТАБ: 11</span>
 </div>
 
-<script src="config.js"></script>
-<script src="mjd_infra_data.js"></script>
-<script src="mjd_tracks_data.js"></script>
 <script src="mjd_osm_network.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-// ===== ДАННЫЕ =====
-const STATIONS = [
-  {id:'st1',type:'station',name:'Ярославский вокзал',lat:55.7763,lng:37.6561,desc:'Крупнейший вокзал России по пассажиропотоку. Начальная станция Транссибирской и Байкало-Амурской магистралей.',stats:{'Платформ':'9','Длина перрона':'500 м','Поездов/сутки':'~200','Пасс./сутки':'~95 000','Год постройки':'1862','Архитектор':'Ф. Шехтель'},sched:[['06:22','Ярославль',3],['07:05','Иваново',1],['08:14','Кострома',2],['09:30','Транссиб',5],['10:00','Вологда',4]]},
-  {id:'st2',type:'station',name:'Казанский вокзал',lat:55.7732,lng:37.6559,desc:'Самый многолюдный вокзал Московского ж/д узла.',stats:{'Платформ':'8','Длина перрона':'400 м','Поездов/сутки':'~180','Пасс./сутки':'~85 000','Год постройки':'1864','Архитектор':'А. Щусев'},sched:[['05:55','Казань',7],['07:30','Самара',2],['08:45','Уфа',4],['09:20','Екатеринбург',6],['11:00','Нижнекамск',1]]},
-  {id:'st3',type:'station',name:'Курский вокзал',lat:55.7558,lng:37.6592,desc:'Один из крупнейших вокзалов Москвы. Курское и Горьковское направления.',stats:{'Платформ':'11','Длина перрона':'450 м','Поездов/сутки':'~220','Пасс./сутки':'~100 000','Год постройки':'1896','Архитектор':'Н. Орлов'},sched:[['05:30','Курск',3],['06:00','Нижний Новгород',1],['07:15','Воронеж',5],['08:00','Белгород',2],['09:40','Орёл',4]]},
-  {id:'st4',type:'station',name:'Киевский вокзал',lat:55.7438,lng:37.5656,desc:'Главный вокзал юго-западного направления. Аэроэкспресс во Внуково.',stats:{'Платформ':'9','Длина перрона':'400 м','Поездов/сутки':'~150','Пасс./сутки':'~70 000','Год постройки':'1918','Архитектор':'И. Рерберг'},sched:[['05:50','Аэроэкспресс Внуково','—'],['07:00','Калуга',2],['08:30','Смоленск',1],['10:00','Аэроэкспресс','—'],['12:10','Брянск',3]]},
-  {id:'st5',type:'station',name:'Павелецкий вокзал',lat:55.7297,lng:37.6474,desc:'Южное направление. Аэроэкспресс в Домодедово.',stats:{'Платформ':'8','Длина перрона':'380 м','Поездов/сутки':'~160','Пасс./сутки':'~75 000','Год постройки':'1900','Архитектор':'М. Быковский'},sched:[['05:40','Аэроэкспресс Домодедово','—'],['06:55','Воронеж',4],['08:00','Ростов-на-Дону',6],['09:15','Адлер',2],['11:00','Волгоград',5]]},
-  {id:'st6',type:'station',name:'Белорусский вокзал',lat:55.7769,lng:37.5817,desc:'Западное направление. Аэроэкспресс в Шереметьево. МЦД-1.',stats:{'Платформ':'8','Длина перрона':'380 м','Поездов/сутки':'~130','Пасс./сутки':'~55 000','Год постройки':'1870','Архитектор':'И. Струков'},sched:[['05:30','Аэроэкспресс Шереметьево','—'],['06:45','Минск',2],['08:00','Смоленск',1],['09:30','Берлин',4],['10:15','Брест',3]]},
-  {id:'st7',type:'station',name:'Рижский вокзал',lat:55.7931,lng:37.6344,desc:'Исторический вокзал 1901 года. Пригородные электрички.',stats:{'Платформ':'5','Длина перрона':'300 м','Поездов/сутки':'~80','Пасс./сутки':'~25 000','Год постройки':'1901','Архитектор':'Ю. Дитрих'},sched:[['06:10','Подмосковная',1],['07:22','Нахабино',2],['08:35','Дедовск',1],['09:50','Новоиерусалимская',2],['11:05','Волоколамск',1]]},
-  {id:'st8',type:'station',name:'Савёловский вокзал',lat:55.7936,lng:37.5900,desc:'Самый маленький московский вокзал. МЦД-1.',stats:{'Платформ':'5','Длина перрона':'300 м','Поездов/сутки':'~90','Пасс./сутки':'~30 000','Год постройки':'1902','Архитектор':'Н. Малинин'},sched:[['06:05','Дмитров',2],['07:18','Лобня',1],['08:30','Дубна',3],['09:44','Талдом',2],['10:55','Яхрома',1]]},
-  {id:'st9',type:'station',name:'Мытищи',lat:55.9100,lng:37.7320,line_id:'yar',desc:'Крупный пересадочный узел Ярославского направления.',tooltip_data:{region:'Московская обл.',kind:'узловая'},stats:{'Платформ':'6','Длина перрона':'360 м','Поездов/сутки':'~150','Пасс./сутки':'~60 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'},sched:[['06:40','Сергиев Посад',3],['07:11','Александров',4],['08:03','Москва',2]]},
-  {id:'st10',type:'station',name:'Люберцы-1',lat:55.6760,lng:37.8930,line_id:'kaz',desc:'Ключевая станция восточного направления узла.',tooltip_data:{region:'Москва',kind:'узловая'},stats:{'Платформ':'5','Длина перрона':'330 м','Поездов/сутки':'~130','Пасс./сутки':'~52 000','Статус':'РАБОТАЕТ','Регион':'Москва'}},
-  {id:'st11',type:'station',name:'Подольск',lat:55.4310,lng:37.5450,line_id:'kur',desc:'Конечный городской узел южного плеча МЖД.',tooltip_data:{region:'Московская обл.',kind:'конечная'},stats:{'Платформ':'4','Длина перрона':'320 м','Поездов/сутки':'~110','Пасс./сутки':'~41 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'}},
-  {id:'st12',type:'station',name:'Апрелевка',lat:55.5480,lng:37.0810,line_id:'kiv',desc:'Крупный узел Киевского направления.',tooltip_data:{region:'Московская обл.',kind:'станция'},stats:{'Платформ':'3','Длина перрона':'290 м','Поездов/сутки':'~70','Пасс./сутки':'~18 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'}},
-  {id:'st13',type:'station',name:'Одинцово',lat:55.6780,lng:37.2780,line_id:'sml',desc:'Западный узел Смоленского направления.',tooltip_data:{region:'Московская обл.',kind:'станция'},stats:{'Платформ':'4','Длина перрона':'315 м','Поездов/сутки':'~95','Пасс./сутки':'~35 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'}},
-  {id:'st14',type:'station',name:'Лобня',lat:56.0120,lng:37.4680,line_id:'sav',desc:'Северная узловая точка Савёловского хода.',tooltip_data:{region:'Московская обл.',kind:'узловая'},stats:{'Платформ':'4','Длина перрона':'300 м','Поездов/сутки':'~86','Пасс./сутки':'~28 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'}},
-  {id:'st15',type:'station',name:'Нахабино',lat:55.8480,lng:37.1770,line_id:'rig',desc:'Конечный узел Рижского направления внутри агломерации.',tooltip_data:{region:'Московская обл.',kind:'конечная'},stats:{'Платформ':'3','Длина перрона':'290 м','Поездов/сутки':'~64','Пасс./сутки':'~16 000','Статус':'РАБОТАЕТ','Регион':'Московская обл.'}}
-];
-const DEPOTS = [
-  {id:'dp1',type:'depot',name:'ТЧ-1 Москва-Пасс-Курская',lat:55.750,lng:37.680,desc:'Локомотивное депо Курского направления. ЧС7, ЧС2Т, ЭП2К.',stats:{'Единиц ПС':'85','Серий':'ЧС7/ЭП2К','Пут. развёртка':'12 км','Смен/сутки':'3','Основано':'1896','Персонал':'~420 чел.'}},
-  {id:'dp2',type:'depot',name:'ТЧ-3 Северянин (Ярославское)',lat:55.833,lng:37.720,desc:'Крупнейшее моторвагонное депо Московского узла. ЭД4М, Иволга ЭГ2Тв.',stats:{'Единиц ПС':'95','Серий':'ЭД4М/Иволга','Пут. развёртка':'15 км','Смен/сутки':'3','Основано':'1945','Персонал':'~510 чел.'}},
-  {id:'dp3',type:'depot',name:'ТЧ-6 Москва-Смоленская',lat:55.760,lng:37.520,desc:'Депо Белорусского направления. ЭР2Т, ЭД4М, аэроэкспрессы.',stats:{'Единиц ПС':'72','Серий':'ЭД4М/Allegro','Пут. развёртка':'9 км','Смен/сутки':'3','Основано':'1929','Персонал':'~380 чел.'}},
-  {id:'dp4',type:'depot',name:'ТЧ-12 Москва-3 (Рязанское)',lat:55.760,lng:37.740,desc:'Депо Казанского и Рязанского направлений. ЭС2Г «Ласточка».',stats:{'Единиц ПС':'120','Серий':'ЭС2Г/ЭД4М','Пут. развёртка':'18 км','Смен/сутки':'3','Основано':'1939','Персонал':'~620 чел.'}},
-  {id:'dp5',type:'depot',name:'ТЧ-20 Подмосковная',lat:55.813,lng:37.517,desc:'Инфраструктурное локомотивное депо западного полигона.',stats:{'Единиц ПС':'56','Серий':'ЭП2К/ЭД4М','Пут. развёртка':'8 км','Смен/сутки':'2','Основано':'1901','Персонал':'~270 чел.'}},
-  {id:'dp6',type:'depot',name:'ТЧ-27 Раменское',lat:55.576,lng:38.229,desc:'Моторвагонное депо восточного полигона.',stats:{'Единиц ПС':'74','Серий':'ЭД4М/ЭП2Д','Пут. развёртка':'10 км','Смен/сутки':'3','Основано':'1946','Персонал':'~340 чел.'}}
-];
-const FREIGHT = [
-  {id:'fr1',type:'freight',name:'М-Пасс-Казанская',lat:55.765,lng:37.685,desc:'Грузовая станция Казанского и Рязанского направлений.',stats:{'Ваг./сутки':'~400','Грузооборот':'2 500 т/сут','Путей приёмки':'12','Горловин':'2','Открыта':'1864','Статус':'РАБОТАЕТ'}},
-  {id:'fr2',type:'freight',name:'М-Тов-Киевская',lat:55.735,lng:37.548,desc:'Грузовая станция Киевского направления.',stats:{'Ваг./сутки':'~300','Грузооборот':'1 800 т/сут','Путей приёмки':'8','Горловин':'2','Открыта':'1918','Статус':'РАБОТАЕТ'}},
-  {id:'fr3',type:'freight',name:'М-Тов-Смоленская',lat:55.748,lng:37.557,desc:'Грузовая станция Смоленского направления.',stats:{'Ваг./сутки':'~350','Грузооборот':'2 000 т/сут','Путей приёмки':'10','Горловин':'2','Открыта':'1870','Статус':'РАБОТАЕТ'}},
-  {id:'fr4',type:'freight',name:'М-Тов-Ярославская',lat:55.793,lng:37.672,desc:'Грузовая станция Ярославского направления.',stats:{'Ваг./сутки':'~280','Грузооборот':'1 500 т/сут','Путей приёмки':'7','Горловин':'1','Открыта':'1862','Статус':'РАБОТАЕТ'}},
-  {id:'fr5',type:'freight',name:'М-Тов-Павелецкая',lat:55.718,lng:37.648,desc:'Грузовая станция Павелецкого направления.',stats:{'Ваг./сутки':'~320','Грузооборот':'1 900 т/сут','Путей приёмки':'9','Горловин':'2','Открыта':'1900','Статус':'РАБОТАЕТ'}},
-  {id:'fr6',type:'freight',name:'М-Сорт-Киевская',lat:55.730,lng:37.535,desc:'Комбинированная грузовая/сортировочная.',stats:{'Ваг./сутки':'~450','Грузооборот':'2 800 т/сут','Путей приёмки':'14','Горловин':'3','Открыта':'1918','Статус':'РАБОТАЕТ'}},
-  {id:'fr7',type:'freight',name:'М-Пасс-Рязанская',lat:55.747,lng:37.700,desc:'Пассажирско-грузовая станция восточного хода.',stats:{'Ваг./сутки':'~260','Грузооборот':'1 400 т/сут','Путей приёмки':'8','Горловин':'2','Открыта':'1901','Статус':'РАБОТАЕТ'}},
-];
-const SORTING = [
-  {id:'so1',type:'sorting',name:'Люблино-Сортировочная',lat:55.679,lng:37.730,desc:'Одна из крупнейших сортировочных станций МЖД.',stats:{'Перераб./сутки':'~1 800 ваг','Сорт. путей':'22','Парков':'3','Горок':'1','Открыта':'1948','Статус':'РАБОТАЕТ'}},
-  {id:'so2',type:'sorting',name:'М-Пасс-Павелецкая (Сорт.)',lat:55.719,lng:37.649,desc:'Технологическая сортировочная станция южного направления.',stats:{'Перераб./сутки':'~900 ваг','Сорт. путей':'14','Парков':'2','Горок':'1','Открыта':'1930','Статус':'РАБОТАЕТ'}},
-  {id:'so3',type:'sorting',name:'Орехово-Сортировочная',lat:55.607,lng:37.744,desc:'Крупный сортировочный узел для юго-восточных ходов.',stats:{'Перераб./сутки':'~1200 ваг','Сорт. путей':'18','Парков':'2','Горок':'1','Открыта':'1958','Статус':'РАБОТАЕТ'}}
-];
-const TERMINALS = [
-  {id:'tm1',type:'terminal',name:'ТСК «Москва-3»',lat:55.772,lng:37.618,desc:'Флагманский ТСК МЖД. Контейнерная площадка, СВХ, таможня.',stats:{'Площадь':'45 000 м²','Контейнеров':'~800 ТЕU','Грузооборот':'1 200 т/сут','СВХ':'ДА','Таможня':'ДА','Статус':'РАБОТАЕТ'}},
-  {id:'tm2',type:'terminal',name:'ТСК «Угрешская»',lat:55.704,lng:37.668,desc:'Логистический хаб южного направления.',stats:{'Площадь':'28 000 м²','Контейнеров':'~500 ТЕU','Грузооборот':'800 т/сут','СВХ':'ДА','Таможня':'НЕТ','Статус':'РАБОТАЕТ'}},
-  {id:'tm3',type:'terminal',name:'ТСК «Кунцево-2»',lat:55.731,lng:37.383,desc:'ТСК западного направления.',stats:{'Площадь':'20 000 м²','Контейнеров':'~350 ТЕU','Грузооборот':'600 т/сут','СВХ':'НЕТ','Таможня':'НЕТ','Статус':'РАБОТАЕТ'}},
-  {id:'tm4',type:'terminal',name:'ТСК «Электроугли»',lat:55.720,lng:38.190,desc:'Восточный контейнерный узел и сортировочная платформа.',stats:{'Площадь':'32 000 м²','Контейнеров':'~620 ТЕU','Грузооборот':'960 т/сут','СВХ':'ДА','Таможня':'ДА','Статус':'РАБОТАЕТ'}},
-  {id:'tm5',type:'terminal',name:'Путепровод «Кусково»',lat:55.742,lng:37.786,desc:'Инфраструктурный объект: путепровод для развязки потоков.',stats:{'Тип':'Путепровод','Линий':'3','Длина':'430 м','Нагрузка':'до 25 т/ось','Введён':'1987','Статус':'РАБОТАЕТ'}}
-];
-const MCC_DESC = 'Станция МЦК. Интегрирована с метро и пригородными электричками.';
-const MCC_STA = [
-  {id:'mc01',type:'mcc',name:'Лужники',lat:55.7333,lng:37.5567,desc:MCC_DESC,stats:{}},
-  {id:'mc02',type:'mcc',name:'Кутузово',lat:55.7400,lng:37.5230,desc:MCC_DESC,stats:{}},
-  {id:'mc03',type:'mcc',name:'Деловой центр',lat:55.7483,lng:37.5383,desc:MCC_DESC,stats:{}},
-  {id:'mc04',type:'mcc',name:'Шелепиха',lat:55.7567,lng:37.5317,desc:MCC_DESC,stats:{}},
-  {id:'mc05',type:'mcc',name:'Хорошёво',lat:55.7817,lng:37.5267,desc:MCC_DESC,stats:{}},
-  {id:'mc06',type:'mcc',name:'Балтийская',lat:55.8033,lng:37.6117,desc:MCC_DESC,stats:{}},
-  {id:'mc07',type:'mcc',name:'Коптево',lat:55.8240,lng:37.5950,desc:MCC_DESC,stats:{}},
-  {id:'mc08',type:'mcc',name:'Николаевка',lat:55.8310,lng:37.5950,desc:MCC_DESC,stats:{}},
-  {id:'mc09',type:'mcc',name:'Лихоборы',lat:55.8470,lng:37.5540,desc:MCC_DESC,stats:{}},
-  {id:'mc10',type:'mcc',name:'Ростокино',lat:55.8283,lng:37.6733,desc:MCC_DESC,stats:{}},
-  {id:'mc11',type:'mcc',name:'Белокаменная',lat:55.8100,lng:37.7317,desc:MCC_DESC,stats:{}},
-  {id:'mc12',type:'mcc',name:'Бульвар Рокоссовского',lat:55.8040,lng:37.7450,desc:MCC_DESC,stats:{}},
-  {id:'mc13',type:'mcc',name:'Локомотив',lat:55.7967,lng:37.7417,desc:MCC_DESC,stats:{}},
-  {id:'mc14',type:'mcc',name:'Измайлово',lat:55.7883,lng:37.7417,desc:MCC_DESC,stats:{}},
-  {id:'mc15',type:'mcc',name:'Соколиная Гора',lat:55.7750,lng:37.7233,desc:MCC_DESC,stats:{}},
-  {id:'mc16',type:'mcc',name:'Шоссе Энтузиастов',lat:55.7600,lng:37.7283,desc:MCC_DESC,stats:{}},
-  {id:'mc17',type:'mcc',name:'Андроновка',lat:55.7440,lng:37.7120,desc:MCC_DESC,stats:{}},
-  {id:'mc18',type:'mcc',name:'Нижегородская',lat:55.7433,lng:37.7167,desc:MCC_DESC,stats:{}},
-  {id:'mc19',type:'mcc',name:'Новохохловская',lat:55.7200,lng:37.7170,desc:MCC_DESC,stats:{}},
-  {id:'mc20',type:'mcc',name:'Угрешская',lat:55.7180,lng:37.7030,desc:MCC_DESC,stats:{}},
-  {id:'mc21',type:'mcc',name:'Дубровка',lat:55.7267,lng:37.7000,desc:MCC_DESC,stats:{}},
-  {id:'mc22',type:'mcc',name:'Автозаводская',lat:55.7050,lng:37.6633,desc:MCC_DESC,stats:{}},
-  {id:'mc23',type:'mcc',name:'ЗИЛ',lat:55.7017,lng:37.6383,desc:MCC_DESC,stats:{}},
-  {id:'mc24',type:'mcc',name:'Крымская',lat:55.7233,lng:37.5950,desc:MCC_DESC,stats:{}},
-  {id:'mc25',type:'mcc',name:'Площадь Гагарина',lat:55.7167,lng:37.5717,desc:MCC_DESC,stats:{}},
-  {id:'mc26',type:'mcc',name:'Университет',lat:55.6930,lng:37.5480,desc:MCC_DESC,stats:{}},
-  {id:'mc27',type:'mcc',name:'Потылиха',lat:55.6990,lng:37.5050,desc:MCC_DESC,stats:{}},
-  {id:'mc28',type:'mcc',name:'Кунцевская',lat:55.7310,lng:37.4460,desc:MCC_DESC,stats:{}},
-  {id:'mc29',type:'mcc',name:'Славянский бульвар',lat:55.7230,lng:37.4670,desc:MCC_DESC,stats:{}},
-  {id:'mc30',type:'mcc',name:'Стрешнево',lat:55.8240,lng:37.4980,desc:MCC_DESC,stats:{}},
-  {id:'mc31',type:'mcc',name:'Панфиловская',lat:55.7933,lng:37.5767,desc:MCC_DESC,stats:{}},
-];
-
-const INFRA_PASS = MJD_INFRA.pass;
-const INFRA_HALT = MJD_INFRA.halt;
-const INFRA_NODE = MJD_INFRA.node;
-const INFRA_SORT_EXTRA = MJD_INFRA.sorting;
-const INFRA_FR_EXTRA = MJD_INFRA.freight;
-const INFRA_DEP_EXTRA = MJD_INFRA.depot;
-const INFRA_DEP_VAG = MJD_INFRA.depot_vag;
-
-// ===== ГЕОМЕТРИЯ: сглаживание (Catmull–Rom) и привязка к линиям =====
-function catmullRomPoint(p0, p1, p2, p3, t) {
-  const t2 = t * t, t3 = t2 * t;
-  return [
-    0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
-    0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
-  ];
-}
-function smoothPolyline(coords, closed, samplesPerSeg = 14) {
-  let pts = coords.map(c => [c[0], c[1]]);
-  if (closed && pts.length > 2) {
-    if (Math.abs(pts[0][0] - pts[pts.length - 1][0]) < 1e-8 && Math.abs(pts[0][1] - pts[pts.length - 1][1]) < 1e-8)
-      pts = pts.slice(0, -1);
-  }
-  const len = pts.length;
-  if (len < 2) return pts;
-  const out = [];
-  function gcv(i) {
-    if (closed) return pts[((i % len) + len) % len];
-    if (i < 0) return [2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]];
-    if (i >= len) return [2 * pts[len - 1][0] - pts[len - 2][0], 2 * pts[len - 1][1] - pts[len - 2][1]];
-    return pts[i];
-  }
-  const nSeg = closed ? len : len - 1;
-  for (let i = 0; i < nSeg; i++) {
-    const p0 = gcv(i - 1), p1 = gcv(i), p2 = gcv(i + 1), p3 = gcv(i + 2);
-    for (let s = 0; s <= samplesPerSeg; s++) {
-      if (i > 0 && s === 0) continue;
-      const t = s / samplesPerSeg;
-      out.push(catmullRomPoint(p0, p1, p2, p3, t));
-    }
-  }
-  if (closed && out.length) out.push([out[0][0], out[0][1]]);
-  return out;
-}
-function distSq(a, b) {
-  const dx = a[0] - b[0], dy = a[1] - b[1];
-  return dx * dx + dy * dy;
-}
-function nearestOnSegment(p, a, b) {
-  const ax = a[0], ay = a[1], bx = b[0], by = b[1], px = p[0], py = p[1];
-  const abx = bx - ax, aby = by - ay;
-  const ab2 = abx * abx + aby * aby;
-  if (ab2 < 1e-20) return [ax, ay];
-  let t = ((px - ax) * abx + (py - ay) * aby) / ab2;
-  t = Math.max(0, Math.min(1, t));
-  return [ax + t * abx, ay + t * aby];
-}
-function nearestOnPolylineList(p, polylines) {
-  let best = [p[0], p[1]], bestD = Infinity;
-  for (const line of polylines) {
-    for (let i = 0; i < line.length - 1; i++) {
-      const q = nearestOnSegment(p, line[i], line[i + 1]);
-      const d = distSq(p, q);
-      if (d < bestD) { bestD = d; best = q; }
-    }
-  }
-  return best;
-}
-function snapObjectsToPolylines(arr, polylines) {
-  arr.forEach(o => {
-    const q = nearestOnPolylineList([o.lat, o.lng], polylines);
-    o.lat = Math.round(q[0] * 1e6) / 1e6;
-    o.lng = Math.round(q[1] * 1e6) / 1e6;
-  });
-}
-function snapObjectsToOneLine(arr, line) {
-  snapObjectsToPolylines(arr, [line]);
-}
-
-const BIG_RING_RAW = [
-  [55.9500,37.1800],[56.0400,37.3200],[56.0900,37.5000],
-  [56.0400,37.7600],[55.9500,37.9500],[55.8400,38.1200],
-  [55.7000,38.2000],[55.5700,38.1000],[55.4800,37.8500],
-  [55.4600,37.5800],[55.4800,37.3200],[55.5800,37.0800],
-  [55.4050,37.0680],[55.3200,37.3800],[55.2510,37.4820],
-  [55.2000,37.5500],[55.7200,36.9800],[55.8600,37.0200],[55.9500,37.1800]
-];
-const RADIALS_RAW = [
-  {name:'Ярославское',color:'#e74c3c',coords:[[55.7763,37.6561],[55.8100,37.6700],[55.8500,37.6900],[55.9200,37.7200],[55.9700,37.7400],[56.0300,37.7600],[56.0900,37.7900],[56.1450,37.8200],[56.2800,37.8800],[56.3980,38.7050]]},
-  {name:'Казанское',color:'#e67e22',coords:[[55.7732,37.6559],[55.7600,37.7050],[55.7433,37.7300],[55.7200,37.7900],[55.7100,37.9000],[55.7000,38.0200],[55.6950,38.1200],[55.6900,38.2350],[55.6200,38.5500],[55.4000,39.2000],[55.2170,39.7660]]},
-  {name:'Горьковское',color:'#f39c12',coords:[[55.7558,37.6592],[55.7480,37.7200],[55.7430,37.7900],[55.7400,37.8900],[55.7350,37.9900],[55.7310,38.0950],[55.7270,38.1900],[55.8058,38.9610],[55.9200,39.4000],[56.1290,40.4066]]},
-  {name:'Курское',color:'#c0392b',coords:[[55.7558,37.6592],[55.7200,37.6700],[55.6800,37.7000],[55.6200,37.7300],[55.5700,37.7600],[55.5050,37.6800],[55.4310,37.5450],[55.3500,37.5000],[55.2500,37.4500],[54.9158,37.4117],[54.4000,37.3500],[54.1931,37.6172],[53.5000,36.9000],[52.9703,36.0633],[51.7373,36.1873]]},
-  {name:'Павелецкое',color:'#9b59b6',coords:[[55.7297,37.6474],[55.7000,37.6500],[55.6500,37.6300],[55.6000,37.6100],[55.5500,37.5900],[55.4900,37.5750],[55.4360,37.7670],[55.3500,37.8500],[55.2000,37.9500],[54.9510,38.2340]]},
-  {name:'Киевское',color:'#2980b9',coords:[[55.7438,37.5656],[55.7200,37.5350],[55.6900,37.4950],[55.6400,37.4100],[55.6000,37.3000],[55.5500,37.1800],[55.5480,37.0810],[55.5400,36.9800],[55.5200,36.7500],[55.4000,36.4000]]},
-  {name:'Смоленское',color:'#27ae60',coords:[[55.7769,37.5817],[55.7700,37.5200],[55.7600,37.4400],[55.7500,37.3400],[55.7350,37.2200],[55.7200,37.1000],[55.6950,36.9800],[55.6800,36.8700],[55.6000,36.5000],[55.4000,35.8000],[54.7820,32.0450]]},
-  {name:'Рижское',color:'#16a085',coords:[[55.7931,37.6344],[55.8200,37.5800],[55.8700,37.5100],[55.9200,37.4100],[55.9700,37.3200],[55.9100,37.2500],[55.8480,37.1770],[55.9000,37.0500],[55.9500,36.8000],[55.8940,35.5050]]},
-  {name:'Савёловское',color:'#1abc9c',coords:[[55.7936,37.5900],[55.8500,37.5700],[55.9000,37.5300],[55.9600,37.5100],[56.0200,37.4600],[56.0850,37.3900],[56.1400,37.3100],[56.3500,37.2000],[56.7310,37.1700]]},
-  {name:'Ленинградское',color:'#3498db',coords:[[55.7763,37.6542],[55.8100,37.6100],[55.8600,37.5600],[55.9100,37.4800],[55.9600,37.4200],[56.0100,37.3700],[56.0800,37.3400],[56.1400,37.3000],[56.3300,37.1500],[56.5000,36.9000],[56.8500,35.9000]]},
-];
-const BIG_RING = smoothPolyline(BIG_RING_RAW, true, 14);
-const RADIALS = RADIALS_RAW.map(r => ({
-  name: r.name,
-  color: r.color,
-  coords: smoothPolyline(r.coords, false, 16)
-}));
-const MJDLINES_FOR_SNAP = [BIG_RING, ...RADIALS.map(r => r.coords)];
-const mccRingSmooth = smoothPolyline(MCC_STA.map(s => [s.lat, s.lng]), true, 12);
-
-// Snap только для объектов без точных OSM-координат (snap !== false)
-function snapOsmAware(arr, polylines) {
-  const withSnap = arr.filter(o => o.snap !== false);
-  snapObjectsToPolylines(withSnap, polylines);
-}
-snapOsmAware(INFRA_PASS, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_HALT, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_NODE, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_SORT_EXTRA, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_FR_EXTRA, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_DEP_EXTRA, MJDLINES_FOR_SNAP);
-snapOsmAware(INFRA_DEP_VAG, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(STATIONS, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(DEPOTS, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(FREIGHT, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(SORTING, MJDLINES_FOR_SNAP);
-snapObjectsToPolylines(TERMINALS, MJDLINES_FOR_SNAP);
-snapObjectsToOneLine(MCC_STA, mccRingSmooth);
-
-function normSchemeName(n) {
-  return String(n).toLowerCase().replace(/ё/g, 'е').replace(/\s*\([^)]*\)/g, '').trim();
-}
-const schemeExisting = new Set();
-[...STATIONS,...DEPOTS,...FREIGHT,...SORTING,...TERMINALS,...MCC_STA,...INFRA_PASS,...INFRA_HALT,...INFRA_NODE,...INFRA_SORT_EXTRA,...INFRA_FR_EXTRA,...INFRA_DEP_EXTRA,...INFRA_DEP_VAG].forEach(o => schemeExisting.add(normSchemeName(o.name)));
-
-const SCHEME_MAP_STATIONS = [
-  {id:'sc1',type:'pass',name:'Владимир',lat:56.1290,lng:40.4066,desc:'Узел Горьковского направления (схема МЖД).',stats:{}},
-  {id:'sc2',type:'node',name:'Брянск-1',lat:53.2434,lng:34.3654,desc:'Главный пассажирский вокзал Брянска.',stats:{}},
-  {id:'sc3',type:'pass',name:'Ржев',lat:56.2617,lng:34.3345,desc:'Ленинградское направление.',stats:{}},
-  {id:'sc4',type:'pass',name:'Тверь',lat:56.8587,lng:35.9179,desc:'Ленинградское направление.',stats:{}},
-  {id:'sc5',type:'pass',name:'Нижний Новгород',lat:56.2965,lng:43.9361,desc:'Восточное продолжение Горьковского хода.',stats:{}},
-].filter(o => !schemeExisting.has(normSchemeName(o.name)));
-snapObjectsToPolylines(SCHEME_MAP_STATIONS, MJDLINES_FOR_SNAP);
-
-const ALL = [...STATIONS,...DEPOTS,...FREIGHT,...SORTING,...TERMINALS,...MCC_STA,...INFRA_PASS,...INFRA_HALT,...INFRA_NODE,...INFRA_SORT_EXTRA,...INFRA_FR_EXTRA,...INFRA_DEP_EXTRA,...INFRA_DEP_VAG,...SCHEME_MAP_STATIONS];
-
-const TYPE_LABEL = {
-  station:'Пассажирский вокзал', depot:'Депо / ТЧ', freight:'Грузовая станция',
-  sorting:'Сортировочная', terminal:'Терминально-складской', mcc:'Станция МЦК',
-  pass:'Пассажирская станция', halt:'Остановочный пункт', node:'Узловая станция',
-  depot_vag:'Вагонное депо'
-};
-
-// ===== ЯНДЕКС РАСПИСАНИЯ API =====
-const YANDEX_API_KEY = window.MJD_CONFIG?.YANDEX_API_KEY || '';
-const YANDEX_BASE = 'https://api.rasp.yandex.net/v3';
-
-// Коды станций Яндекс.Расписаний (9900xxx — вокзалы Москвы)
-const YANDEX_STATION_CODES = {
-  'Ярославский вокзал':   's9600444',
-  'Казанский вокзал':     's9600438',
-  'Курский вокзал':       's9600441',
-  'Киевский вокзал':      's9600437',
-  'Павелецкий вокзал':    's9600445',
-  'Белорусский вокзал':   's9600435',
-  'Рижский вокзал':       's9600446',
-  'Савёловский вокзал':   's9600447',
-};
-
-// Кэш расписаний: { stationName: { data: [...], timestamp: ms } }
-const scheduleCache = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 минут
-
-function fetchYandexSchedule(stationName) {
-  const code = YANDEX_STATION_CODES[stationName];
-  if (!code) return Promise.resolve(null);
-
-  // Проверка кэша
-  const cached = scheduleCache[stationName];
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return Promise.resolve(cached.data);
-  }
-
-  const url = `${YANDEX_BASE}/schedule/?apikey=${YANDEX_API_KEY}&from=${code}&format=json&limit=20&system=esr5`;
-
-  return fetch(url)
-    .then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    })
-    .then(data => {
-      if (data.segments && data.segments.length > 0) {
-        const result = data.segments.map(seg => {
-          const dep = seg.departure ? seg.departure.slice(0, 5) : '??:??';
-          const title = seg.title || seg.thread?.title || '—';
-          const plat = seg.platform || '—';
-          return [dep, title, plat];
-        });
-        scheduleCache[stationName] = { data: result, timestamp: Date.now() };
-        return result;
-      }
-      return null;
-    })
-    .catch(err => {
-      console.warn(`Яндекс.Расписания (${stationName}):`, err.message);
-      return null;
-    });
-}
-
 // ===== КАРТА =====
 const map = L.map('map', { center:[55.7522,37.6156], zoom:11, zoomControl:false, minZoom:8, maxZoom:17 });
 
@@ -930,27 +611,7 @@ applyTheme(saved !== 'light');
 
 // ===== СЛОИ =====
 const LG = {
-  osmNetwork:  L.layerGroup().addTo(map),  // самый нижний слой
-  osmStations: L.layerGroup().addTo(map),
-  radial:   L.layerGroup().addTo(map),
-  bigring:  L.layerGroup().addTo(map),
-  mccRing:  L.layerGroup().addTo(map),
-  stations: L.layerGroup().addTo(map),
-  mcc:      L.layerGroup().addTo(map),
-  freight:  L.layerGroup().addTo(map),
-  depot:    L.layerGroup().addTo(map),
-  depot_vag:L.layerGroup().addTo(map),
-  sorting:  L.layerGroup().addTo(map),
-  terminal: L.layerGroup().addTo(map),
-  pass:     L.layerGroup().addTo(map),
-  halt:     L.layerGroup().addTo(map),
-  node:     L.layerGroup().addTo(map),
-  mcd:      L.layerGroup().addTo(map),
-};
-const TYPE_LG = {
-  station:'stations', mcc:'mcc', freight:'freight',
-  depot:'depot', depot_vag:'depot_vag', sorting:'sorting', terminal:'terminal',
-  pass:'pass', halt:'halt', node:'node',
+  osmNetwork: L.layerGroup().addTo(map),
 };
 
 // ===== ЛИНИИ НА КАРТЕ =====
@@ -971,174 +632,6 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
 }
 
 // OSM станции — маленькие кружки
-if (typeof MJD_OSM_STATIONS !== 'undefined') {
-  MJD_OSM_STATIONS.forEach(st => {
-    const isStation = st.type === 'station';
-    L.circleMarker([st.lat, st.lon], {
-      radius:      isStation ? 4 : 2.5,
-      color:       '#fff',
-      weight:      1,
-      fillColor:   isStation ? '#c0392b' : '#7f8c8d',
-      fillOpacity: 0.85,
-    }).bindTooltip(st.name, {direction:'top', offset:[0,-4]})
-      .addTo(LG.osmStations);
-  });
-}
-
-// МЦК кольцо (сглаженное, станции привязаны к этой линии)
-const mccLine = L.polyline(mccRingSmooth, {color:'#e04030',weight:4,opacity:0.9}).addTo(LG.mccRing);
-mccLine._railwayName = 'МЦК — Малое кольцо Москвы';
-mccLine.bindTooltip('<b>МЦК — Малое кольцо Москвы</b><br><span style="color:var(--accent);font-size:10px">Малое кольцо</span>', {direction:'top',offset:[0,-6]});
-RAILWAY_LINES.push(mccLine);
-
-// Большое кольцо
-const bigRingLine = L.polyline(BIG_RING, {color:'#f39c12',weight:3,opacity:0.65,dashArray:'12 7'}).addTo(LG.bigring);
-bigRingLine._railwayName = 'Большое кольцо МЖД';
-bigRingLine.bindTooltip('<b>Большое кольцо МЖД</b><br><span style="color:var(--accent);font-size:10px">Большое кольцо</span>', {direction:'top',offset:[0,-6]});
-RAILWAY_LINES.push(bigRingLine);
-
-// Радиальные
-const radialPolylines = [];
-RADIALS.forEach(r => {
-  const pl = L.polyline(r.coords, {color:r.color,weight:2.5,opacity:0.75}).addTo(LG.radial);
-  pl._railwayName = r.name + ' направление';
-  pl._railwayColor = r.color;
-  pl.bindTooltip(`<b>${r.name} направление</b><br><span style="color:var(--accent);font-size:10px">Радиальная линия</span>`, {direction:'top',offset:[0,-6]});
-  radialPolylines.push(pl);
-  RAILWAY_LINES.push(pl);
-});
-
-// Заполняем легенду радиальных линий
-const radialContainer = document.getElementById('radial-legend-container');
-if (radialContainer) {
-  RADIALS.forEach(r => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = `<span class="legend-color" style="background:${r.color}"></span><span>${r.name}</span>`;
-    radialContainer.appendChild(item);
-  });
-}
-
-// МЦД
-if (typeof MJD_MCD !== 'undefined') {
-  Object.entries(MJD_MCD).forEach(([key, mcd]) => {
-    const pl = L.polyline(mcd.coords, {
-      color: mcd.color, weight: 2.5, opacity: 0.75, dashArray: '8 4'
-    }).addTo(LG.mcd);
-    pl._railwayName = mcd.name;
-    pl._railwayColor = mcd.color;
-    pl.bindTooltip(`<b>${mcd.name}</b><br><span style="color:var(--accent);font-size:10px">МЦД</span>`, {direction:'top',offset:[0,-6]});
-    RAILWAY_LINES.push(pl);
-  });
-}
-
-// Hover-эффект и клик для ж/д линий (тултипы через bindTooltip выше)
-RAILWAY_LINES.forEach(pl => {
-  pl.options._origWeight = pl.options.weight;
-  pl.options._origColor = pl.options.color;
-
-  pl.on('mouseover', function() {
-    this.setStyle({ weight: (this.options._origWeight || this.options.weight) + 1.5 });
-  });
-  pl.on('mouseout', function() {
-    this.setStyle({ weight: this.options._origWeight, color: this.options._origColor });
-  });
-});
-
-// ===== ИКОНКИ =====
-function mkIcon(emoji, bg, size=34) {
-  return L.divIcon({
-    html: `<div style="width:${size}px;height:${size}px;background:${bg};border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.48)}px;box-shadow:0 2px 10px rgba(0,0,0,.6);cursor:pointer;">${emoji}</div>`,
-    className: '',
-    iconSize: [size,size],
-    iconAnchor: [size/2,size/2],
-    popupAnchor: [0,-size/2]
-  });
-}
-function mkStationIcon() {
-  return L.divIcon({
-    html: '<div class="station-marker-shell"><span class="station-marker-visual"></span></div>',
-    className: 'station-marker',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
-  });
-}
-function mkMccIcon() {
-  return L.divIcon({
-    html: '<div class="mcc-marker-shell"><span class="mcc-marker-visual"></span></div>',
-    className: 'mcc-marker',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
-  });
-}
-function mkPassIcon() {
-  return L.divIcon({
-    html: '<div class="station-marker-shell"><span class="pass-marker-visual"></span></div>',
-    className: 'station-marker',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10]
-  });
-}
-function mkHaltIcon() {
-  return L.divIcon({
-    html: '<div class="station-marker-shell"><span class="halt-marker-visual"></span></div>',
-    className: 'station-marker',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-    popupAnchor: [0, -9]
-  });
-}
-function mkNodeIcon() {
-  return L.divIcon({
-    html: '<div class="station-marker-shell"><span class="node-marker-visual"></span></div>',
-    className: 'station-marker',
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -11]
-  });
-}
-const ICONS = {
-  station:  mkStationIcon(),
-  depot:    mkIcon('⚙️','#7d3da0',30),
-  freight:  mkIcon('📦','#c06010',28),
-  sorting:  mkIcon('🔀','#128070',30),
-  terminal: mkIcon('🏭','#a09010',28),
-  mcc:      mkMccIcon(),
-  pass:     mkPassIcon(),
-  halt:     mkHaltIcon(),
-  node:     mkNodeIcon(),
-  depot_vag: mkIcon('🚃','#8e44ad',28),
-};
-
-// ===== МАРКЕРЫ =====
-const markerMap = {};
-function addMarkers(arr) {
-  arr.forEach(obj => {
-    const m = L.marker([obj.lat, obj.lng], {icon: ICONS[obj.type]});
-    m.bindTooltip(`<b>${obj.name}</b><br><span style="color:var(--accent);font-size:10px">${TYPE_LABEL[obj.type]}</span>`, {direction:'top',offset:[0,-16]});
-    m.on('click', () => openInfoPanel(obj));
-    m.addTo(LG[TYPE_LG[obj.type]] || LG[obj.type]);
-    markerMap[obj.id] = {marker: m, data: obj};
-  });
-}
-addMarkers(STATIONS);
-addMarkers(DEPOTS);
-addMarkers(FREIGHT);
-addMarkers(SORTING);
-addMarkers(TERMINALS);
-addMarkers(MCC_STA);
-addMarkers(INFRA_PASS);
-addMarkers(INFRA_HALT);
-addMarkers(INFRA_NODE);
-addMarkers(INFRA_SORT_EXTRA);
-addMarkers(INFRA_FR_EXTRA);
-addMarkers(INFRA_DEP_EXTRA);
-addMarkers(INFRA_DEP_VAG);
-addMarkers(SCHEME_MAP_STATIONS);
-
 // ===== ГРАНИЦА МОСКВЫ =====
 fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Россия&polygon_geojson=1&format=json&limit=1',
   {headers:{'Accept-Language':'ru'}})
@@ -1161,7 +654,7 @@ function openInfoPanel(obj) {
   clearInterval(liveTimer);
 
   document.getElementById('ip-title').textContent = obj.name;
-  document.getElementById('ip-type').textContent = TYPE_LABEL[obj.type];
+  document.getElementById('ip-type').textContent = '';
   const infoPanel = document.getElementById('info-panel');
   const zoomCtrl = document.getElementById('zoom-ctrl');
   zoomCtrl.classList.add('map-controls-horizontal');
@@ -1252,40 +745,7 @@ function startLive() {
 
 function renderSched(body) {
   clearInterval(liveTimer);
-  const o = currentObj;
-
-  // Для вокзалов — пробуем Яндекс.Расписания
-  if (o.type === 'station' && YANDEX_STATION_CODES[o.name]) {
-    body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Загрузка расписания…</div>';
-    fetchYandexSchedule(o.name).then(segments => {
-      if (segments && segments.length > 0) {
-        let html = '<div style="margin-bottom:6px"><span style="color:var(--live-color);font-size:11px">● Яндекс.Расписания (реальные данные)</span></div>';
-        segments.forEach(s => {
-          html += `<div class="ip-sched-item"><span class="ip-sched-time">${s[0]}</span><span class="ip-sched-dest">${s[1]}</span><span class="ip-sched-plat">пл. ${s[2]}</span></div>`;
-        });
-        body.innerHTML = html;
-      } else {
-        // Fallback на статические данные
-        renderSchedFallback(body, o);
-      }
-    });
-    return;
-  }
-
-  renderSchedFallback(body, o);
-}
-
-function renderSchedFallback(body, o) {
-  const sched = o.sched;
-  if (!sched || sched.length === 0) {
-    body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Расписание отсутствует</div>';
-    return;
-  }
-  let html = '';
-  sched.forEach(s => {
-    html += `<div class="ip-sched-item"><span class="ip-sched-time">${s[0]}</span><span class="ip-sched-dest">${s[1]}</span><span class="ip-sched-plat">пл. ${s[2]}</span></div>`;
-  });
-  body.innerHTML = html;
+  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:12px 0">Расписание недоступно</div>';
 }
 
 // Переключение табов
@@ -1325,21 +785,7 @@ document.getElementById('ip-maps').addEventListener('click', () => {
 
 // ===== ФИЛЬТРЫ =====
 const LAYER_MAP = {
-  stations: 'stations',
-  mcc: ['mcc','mccRing'],
-  bigring: 'bigring',
-  radial: 'radial',
-  freight: 'freight',
-  depot: 'depot',
-  depot_vag: 'depot_vag',
-  sorting: 'sorting',
-  terminal: 'terminal',
-  pass: 'pass',
-  halt: 'halt',
-  node: 'node',
-  mcd:  'mcd',
-  osmNetwork:  'osmNetwork',
-  osmStations: 'osmStations',
+  osmNetwork: 'osmNetwork',
 };
 function saveFilters() {
   const state = {};
@@ -1389,55 +835,6 @@ document.getElementById('filters-toggle').addEventListener('click', () => {
   btn.textContent = dd.classList.contains('open') ? 'Фильтры ▲' : 'Фильтры ▼';
 });
 
-// ===== ПОИСК =====
-const searchInput = document.getElementById('search-input');
-const searchResults = document.getElementById('search-results');
-
-// Предварительный индекс для быстрого поиска
-const SEARCH_INDEX = ALL.map(o => ({
-  ...o,
-  _norm: o.name.toLowerCase().replace(/ё/g, 'е'),
-  _type: TYPE_LABEL[o.type].toLowerCase()
-}));
-
-let searchDebounce = null;
-searchInput.addEventListener('input', () => {
-  clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(() => {
-  const q = searchInput.value.trim().toLowerCase().replace(/ё/g, 'е');
-  if (!q) { searchResults.classList.remove('show'); return; }
-  const hits = SEARCH_INDEX.filter(o => o._norm.includes(q) || o._type.includes(q));
-  if (hits.length === 0) {
-    searchResults.innerHTML = '<div class="sr-item"><span class="sr-name" style="color:var(--text-muted)">Ничего не найдено</span></div>';
-    searchResults.classList.add('show');
-    return;
-  }
-  searchResults.innerHTML = hits.slice(0,10).map(o =>
-    `<div class="sr-item" data-id="${o.id}"><span class="sr-name">${o.name}</span><br><span class="sr-type">${TYPE_LABEL[o.type]}</span></div>`
-  ).join('');
-  searchResults.classList.add('show');
-  }, 200); // debounce 200ms
-});
-
-searchResults.addEventListener('click', e => {
-  const item = e.target.closest('.sr-item');
-  if (!item) return;
-  const id = item.dataset.id;
-  const entry = markerMap[id];
-  if (!entry) return;
-  const {marker, data} = entry;
-  map.setView([data.lat, data.lng], 14, {animate:true});
-  openInfoPanel(data);
-  searchResults.classList.remove('show');
-  searchInput.value = '';
-});
-
-document.addEventListener('click', e => {
-  if (!e.target.closest('#search-wrap')) {
-    searchResults.classList.remove('show');
-  }
-});
-
 // ===== КНОПКИ КАРТЫ =====
 document.getElementById('zin').addEventListener('click', () => map.zoomIn());
 document.getElementById('zout').addEventListener('click', () => map.zoomOut());
@@ -1481,39 +878,6 @@ function setupSidebarResize() {
 }
 setupSidebarResize();
 
-// ===== ЗУМ-ЗАВИСИМАЯ ВИДИМОСТЬ =====
-function updateZoomVisibility() {
-  const z = map.getZoom();
-  const haltOn    = document.querySelector('[data-layer="halt"]')?.checked ?? true;
-  const nodeOn    = document.querySelector('[data-layer="node"]')?.checked ?? true;
-  const passOn    = document.querySelector('[data-layer="pass"]')?.checked ?? true;
-  const osmStaOn  = document.querySelector('[data-layer="osmStations"]')?.checked ?? true;
-
-  if (z < 10) {
-    if (haltOn)   map.removeLayer(LG.halt);
-    if (nodeOn)   map.removeLayer(LG.node);
-    if (passOn)   map.removeLayer(LG.pass);
-    if (osmStaOn) map.removeLayer(LG.osmStations);
-  } else if (z < 11) {
-    if (haltOn)   map.removeLayer(LG.halt);
-    if (nodeOn)   map.removeLayer(LG.node);
-    if (passOn)   map.removeLayer(LG.pass);
-    if (osmStaOn) LG.osmStations.addTo(map);
-  } else if (z < 13) {
-    if (haltOn)   map.removeLayer(LG.halt);
-    if (nodeOn)   LG.node.addTo(map);
-    if (passOn)   LG.pass.addTo(map);
-    if (osmStaOn) LG.osmStations.addTo(map);
-  } else {
-    if (haltOn)   LG.halt.addTo(map);
-    if (nodeOn)   LG.node.addTo(map);
-    if (passOn)   LG.pass.addTo(map);
-    if (osmStaOn) LG.osmStations.addTo(map);
-  }
-}
-map.on('zoomend', updateZoomVisibility);
-updateZoomVisibility();
-
 // ===== СТАТУС-СТРОКА =====
 function mskTime() {
   const now = new Date();
@@ -1556,7 +920,6 @@ map.on('zoomend', () => {
   document.getElementById('sb-zoom').textContent = 'МАСШТАБ: '+map.getZoom();
   updateOrmVisibility();
 });
-document.getElementById('sb-count').textContent = 'ОБЪЕКТОВ: '+ALL.length;
 });
 </script>
 </body>

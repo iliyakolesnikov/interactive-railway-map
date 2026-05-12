@@ -548,6 +548,38 @@ const MJD_STATIONS = [
 // ===== ЛИНИИ НА КАРТЕ =====
 const RAILWAY_LINES = []; // для кликабельности
 
+// ===== РЕНДЕР СТАНЦИЙ И ОСТАНОВОК =====
+const stationIcon = L.divIcon({
+  className: 'mjd-icon',
+  html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>',
+  iconSize: [11, 11], iconAnchor: [5, 5]
+});
+const stopIcon = L.divIcon({
+  className: 'mjd-icon',
+  html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.6)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="2" fill="#a0aec0"/></svg>',
+  iconSize: [11, 11], iconAnchor: [5, 5]
+});
+
+function renderStations(list) {
+  LG.mjdStations.clearLayers();
+  LG.mjdStops.clearLayers();
+  for (const s of list) {
+    const isStation = s.type === 'Станция';
+    const icon = isStation ? stationIcon : stopIcon;
+    const popup = `<div class="mjd-popup">
+      <div class="mjd-popup-name">${s.name}</div>
+      <div class="mjd-popup-type">${s.type || 'МЖД'}</div>
+      ${s.line ? `<div class="mjd-popup-row">&#128205; ${s.line}</div>` : ''}
+      <div class="mjd-popup-coords">${(+s.lat).toFixed(5)}, ${(+s.lon).toFixed(5)}</div>
+    </div>`;
+    L.marker([+s.lat, +s.lon], {icon, interactive: true})
+      .bindTooltip(s.name, {permanent: false, direction: 'right', offset: [8, 0]})
+      .bindPopup(popup, {maxWidth: 280, minWidth: 190})
+      .addTo(isStation ? LG.mjdStations : LG.mjdStops);
+  }
+  document.getElementById('sb-count').textContent = 'ОБЪЕКТОВ: ' + list.length;
+}
+
 // OSM rail network — самый нижний слой, не интерактивный
 if (typeof MJD_OSM_NETWORK !== 'undefined') {
   const segs = [];
@@ -563,35 +595,13 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
 }
 
 // ===== СТАНЦИИ МЖД НА КАРТЕ =====
-(function() {
-  const stationIcon = L.divIcon({
-    className: 'mjd-icon',
-    html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>',
-    iconSize: [11, 11],
-    iconAnchor: [5, 5]
-  });
-  const stopIcon = L.divIcon({
-    className: 'mjd-icon',
-    html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.6)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="2" fill="#a0aec0"/></svg>',
-    iconSize: [11, 11],
-    iconAnchor: [5, 5]
-  });
-  for (const s of MJD_STATIONS) {
-    const isStation = s.type === 'Станция';
-    const lg = isStation ? LG.mjdStations : LG.mjdStops;
-    const icon = isStation ? stationIcon : stopIcon;
-    const popup = `<div class="mjd-popup">
-      <div class="mjd-popup-name">${s.name}</div>
-      <div class="mjd-popup-type">${s.type || 'МЖД'}</div>
-      ${s.line ? `<div class="mjd-popup-row">📍 ${s.line}</div>` : ''}
-      <div class="mjd-popup-coords">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</div>
-    </div>`;
-    L.marker([s.lat, s.lon], {icon, interactive: true})
-      .bindTooltip(s.name, {permanent: false, direction: 'right', offset: [8, 0]})
-      .bindPopup(popup, {maxWidth: 280, minWidth: 190})
-      .addTo(lg);
-  }
-})();
+// Немедленный рендер хардкодированных данных — карта работает без сервера
+renderStations(MJD_STATIONS);
+// Если запущен server.py — подгружаем актуальные данные из БД
+fetch('/api/stations')
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(data => { if (data.length) renderStations(data); })
+  .catch(() => {});
 
 // ===== ГРАНИЦА МОСКВЫ =====
 fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Россия&polygon_geojson=1&format=json&limit=1',

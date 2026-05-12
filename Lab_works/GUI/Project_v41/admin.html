@@ -236,9 +236,35 @@ td.td-line { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-
   align-items: center;
   margin-bottom: 12px;
 }
+.blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center;
+}
+.blocked h2 { font-size: 16px; color: var(--accent); letter-spacing: 1px; }
+.blocked p  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.blocked a  { color: var(--accent); }
 </style>
 </head>
 <body>
+<script>
+if (location.protocol === 'file:') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.innerHTML = `<div class="blocked">
+      <h2>ДОСТУП ЗАПРЕЩЁН</h2>
+      <p>Страница управления доступна только через сервер.<br>
+      Запустите <code>python3 server.py</code> и откройте:<br>
+      <a href="http://localhost:8080/admin.html">http://localhost:8080/admin.html</a></p>
+    </div>`;
+  });
+  throw new Error('file:// access denied');
+}
+</script>
 <header>
   <h1>МЖД · УПРАВЛЕНИЕ СТАНЦИЯМИ</h1>
   <div class="header-right">

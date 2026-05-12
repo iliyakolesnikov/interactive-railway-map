@@ -620,7 +620,7 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
   }
   if (cur.length >= 2) segs.push(cur);
   if (segs.length) {
-    L.polyline(segs, {color:'#8b7355', weight:1.5, opacity:0.5, interactive:false}).addTo(LG.osmNetwork);
+    L.polyline(segs, {color:'#8b7355', weight:1.5, opacity:0.5, interactive:false, renderer:L.canvas(), smoothFactor:2}).addTo(LG.osmNetwork);
   }
 }
 

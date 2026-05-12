@@ -289,6 +289,28 @@ body.resizing #map {
 .zb:hover { border-color: var(--border-active); }
 .zb:first-child { border-radius: 4px 4px 0 0; }
 .zb:last-child { border-radius: 0 0 4px 4px; }
+/* Кнопка перехода в админку */
+#admin-btn {
+  position: absolute;
+  bottom: 36px;
+  right: 16px;
+  z-index: 400;
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.4px;
+  transition: border-color .2s, color .2s;
+}
+#admin-btn:hover { border-color: var(--border-active); color: var(--text-primary); }
 /* Статус-строка */
 #statusbar {
   position: fixed;
@@ -449,6 +471,14 @@ body.resizing #map {
     <button class="zb" id="theme-toggle" title="Сменить тему">☾</button>
   </div>
 </div>
+<a id="admin-btn" href="/admin.html" title="Управление станциями">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="1" y="1" width="12" height="9" rx="1"/>
+    <line x1="4" y1="12" x2="10" y2="12"/>
+    <line x1="7" y1="10" x2="7" y2="12"/>
+  </svg>
+  Таблица
+</a>
 <!-- STATUS BAR -->
 <div id="statusbar">
   <span class="sb-accent">МЖД · ОПЕРАТИВНАЯ СИСТЕМА v2.6</span>

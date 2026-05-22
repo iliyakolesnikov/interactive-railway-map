@@ -278,7 +278,7 @@ if (location.protocol === 'file:') {
       <div class="form-field">
         <label>Тип</label>
         <select id="f-type">
-          <option value="Остановка">Остановка</option>
+          <option value="Остановочный пункт">Остановочный пункт</option>
           <option value="Станция">Станция</option>
         </select>
       </div>
@@ -351,7 +351,7 @@ function renderTable() {
   tbody.innerHTML = stations.map(s => {
     const badge = s.type === 'Станция'
       ? '<span class="type-badge type-station">Станция</span>'
-      : '<span class="type-badge type-stop">Остановка</span>';
+      : `<span class="type-badge type-stop">${esc(s.type)}</span>`;
     return `<tr id="row-${s.id}">
       <td class="td-id">${s.id}</td>
       <td class="td-name">${esc(s.name)}</td>
@@ -431,7 +431,7 @@ function cancelEdit() {
   document.getElementById('f-name').value  = '';
   document.getElementById('f-lat').value   = '';
   document.getElementById('f-lon').value   = '';
-  document.getElementById('f-type').value  = 'Остановка';
+  document.getElementById('f-type').value  = 'Остановочный пункт';
   document.getElementById('f-line').value  = '';
   document.getElementById('form-title').textContent = 'Добавить станцию / остановку';
   document.getElementById('submit-btn').textContent = 'Добавить';

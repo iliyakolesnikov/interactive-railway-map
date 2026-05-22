@@ -250,6 +250,24 @@ body.resizing #map {
 body:not(.zoom-labels) .leaflet-tooltip-permanent {
   display: none !important;
 }
+/* Надпись станции: без рамки, как label на карте */
+.station-label.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 2px !important;
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  text-shadow:
+    0 0 3px var(--bg-secondary),
+    0 0 3px var(--bg-secondary),
+    1px 0 2px var(--bg-secondary),
+   -1px 0 2px var(--bg-secondary) !important;
+  white-space: nowrap !important;
+}
+.station-label.leaflet-tooltip::before { display: none !important; }
 /* Тултипы ж/д линий — через Leaflet bindTooltip, см. JS */
 /* КАРТА */
 #map-wrap {
@@ -514,7 +532,7 @@ function applyTheme(dark) {
     subdomains: 'abcd', maxZoom: 19, opacity: 0.85
   }).addTo(map);
   if (osmNetworkLayer) {
-    osmNetworkLayer.setStyle({color: dark ? '#d4aa50' : '#7a4e18'});
+    osmNetworkLayer.setStyle({color: dark ? '#d4aa50' : '#c8a800'});
   }
   localStorage.setItem('mjd-theme', dark ? 'dark' : 'light');
 }
@@ -611,7 +629,7 @@ function renderStations(list) {
       ${s.line ? `<div class="mjd-popup-row">&#128205; ${s.line}</div>` : ''}
     </div>`;
     L.marker([+s.lat, +s.lon], {icon, interactive: true})
-      .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [8, 0]})
+      .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [7, 0], className: 'station-label'})
       .bindPopup(popup, {maxWidth: 280, minWidth: 190})
       .addTo(isStation ? LG.mjdStations : LG.mjdStops);
   }
@@ -628,32 +646,58 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
   }
   if (cur.length >= 2) rawSegs.push(cur);
 
-  // Закрываем разрывы: соединяем концы сегментов, расположенные ближе ~150 м
-  const CELL = 0.0015;
-  const THRESH2 = CELL * CELL;
-  const endGrid = new Map();
-  function cellKey(lat, lon) { return `${Math.round(lat/CELL)}_${Math.round(lon/CELL)}`; }
+  // Закрываем разрывы путей: direction-aware bridging до ~600 м
+  // LON_K — поправка масштаба долготы на широте Москвы (cos 55°)
+  const LON_K = 0.573;
+  const BCELL = 0.006; // ячейка сетки ~670 м по широте
+  const BTHRESH2 = BCELL * BCELL; // порог расстояния²
+  const COS_MIN = 0.55; // мин. косинус угла (~57°) для проверки направления
+
+  function normDir(from, to) {
+    const dlat = to[0] - from[0];
+    const dlng = (to[1] - from[1]) * LON_K;
+    const l = Math.sqrt(dlat * dlat + dlng * dlng);
+    return l > 1e-9 ? [dlat / l, dlng / l] : null;
+  }
+  // Направления на конце и начале каждого сегмента
+  const endDirs = rawSegs.map(s => s.length >= 2 ? normDir(s[s.length - 2], s[s.length - 1]) : null);
+  const startDirs = rawSegs.map(s => s.length >= 2 ? normDir(s[0], s[1]) : null);
+
+  // Пространственный индекс концов сегментов
+  const endIdx = new Map();
   for (let i = 0; i < rawSegs.length; i++) {
     const e = rawSegs[i][rawSegs[i].length - 1];
-    const k = cellKey(e[0], e[1]);
-    if (!endGrid.has(k)) endGrid.set(k, []);
-    endGrid.get(k).push({idx: i, pt: e});
+    const k = `${Math.round(e[0] / BCELL)}_${Math.round(e[1] / BCELL)}`;
+    if (!endIdx.has(k)) endIdx.set(k, []);
+    endIdx.get(k).push(i);
   }
+
   const bridges = [];
-  for (let i = 0; i < rawSegs.length; i++) {
-    const s = rawSegs[i][0];
-    const sr = Math.round(s[0]/CELL), sc = Math.round(s[1]/CELL);
+  for (let j = 0; j < rawSegs.length; j++) {
+    const s = rawSegs[j][0];
+    const sr = Math.round(s[0] / BCELL), sc = Math.round(s[1] / BCELL);
+    let bestD2 = BTHRESH2, bestI = -1;
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-      for (const e of (endGrid.get(`${sr+dr}_${sc+dc}`) || [])) {
-        if (e.idx === i) continue;
-        const dlat = s[0]-e.pt[0], dlng = s[1]-e.pt[1];
-        if (dlat*dlat + dlng*dlng < THRESH2) bridges.push([e.pt, s]);
+      for (const i of (endIdx.get(`${sr + dr}_${sc + dc}`) || [])) {
+        if (i === j) continue;
+        const e = rawSegs[i][rawSegs[i].length - 1];
+        const dlat = s[0] - e[0], dlng = (s[1] - e[1]) * LON_K;
+        const d2 = dlat * dlat + dlng * dlng;
+        if (d2 >= bestD2) continue;
+        // Проверяем: мост должен продолжать направление обоих сегментов
+        const bDir = normDir(e, s);
+        if (!bDir || !endDirs[i] || !startDirs[j]) continue;
+        if (endDirs[i][0] * bDir[0] + endDirs[i][1] * bDir[1] < COS_MIN) continue;
+        if (startDirs[j][0] * bDir[0] + startDirs[j][1] * bDir[1] < COS_MIN) continue;
+        bestD2 = d2;
+        bestI = i;
       }
     }
+    if (bestI !== -1) bridges.push([rawSegs[bestI][rawSegs[bestI].length - 1], s]);
   }
 
   if (rawSegs.length) {
-    const trackColor = isDark ? '#d4aa50' : '#7a4e18';
+    const trackColor = isDark ? '#d4aa50' : '#c8a800';
     osmNetworkLayer = L.polyline(rawSegs, {
       color: trackColor, weight: 2.5, opacity: 0.88,
       interactive: false, renderer: L.canvas(), smoothFactor: 1

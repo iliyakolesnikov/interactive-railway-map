@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>МЖД · ОПЕРАТИВНАЯ КАРТА</title>
+<title>МЖД · ИНТЕРАКТИВНАЯ КАРТА ЖЕЛЕЗНЫХ ДОРОГ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -246,6 +246,10 @@ body.resizing #map {
   max-height: 600px;
   padding-bottom: 12px;
 }
+/* Названия станций — показывать только при zoom >= 11 */
+body:not(.zoom-labels) .leaflet-tooltip-permanent {
+  display: none !important;
+}
 /* Тултипы ж/д линий — через Leaflet bindTooltip, см. JS */
 /* КАРТА */
 #map-wrap {
@@ -440,14 +444,14 @@ body.resizing #map {
 <!-- SIDEBAR -->
 <div id="sidebar" class="sidebar-left">
   <div id="sidebar-header">
-    <h1>МЖД · ОПЕРАТИВНАЯ КАРТА</h1>
+    <h1>МЖД · ИНТЕРАКТИВНАЯ КАРТА ЖЕЛЕЗНЫХ ДОРОГ</h1>
     <div class="ver">v2.6</div>
   </div>
   <div id="legend-wrap">
     <div class="legend-title">Легенда</div>
-    <div class="legend-item"><span class="filter-dot" style="background:#8b7355"></span>Пути</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#d4aa50"></span>Пути</div>
     <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="rgba(255,255,255,0.9)"/></svg>Станция</div>
-    <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="#a0aec0"/></svg>Остановка</div>
+    <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="#a0aec0"/></svg>Остановочный пункт</div>
   </div>
   <div id="filters-wrap">
     <button class="filters-toggle" id="filters-toggle">Фильтры ▼</button>
@@ -455,7 +459,7 @@ body.resizing #map {
     <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
     <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути</label>
     <label class="filter-item"><input type="checkbox" checked data-layer="mjdStations"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5" cy="5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>Станции</label>
-    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStops"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1"/><circle cx="5" cy="5" r="1.8" fill="#a0aec0"/></svg>Остановки</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStops"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#4a5568" stroke="rgba(200,210,220,0.55)" stroke-width="1"/><circle cx="5" cy="5" r="1.8" fill="#a0aec0"/></svg>Остановочные пункты</label>
     </div>
   </div>
   <div class="resize-handle" id="left-resize-handle" aria-hidden="true"></div>
@@ -481,7 +485,7 @@ body.resizing #map {
 </a>
 <!-- STATUS BAR -->
 <div id="statusbar">
-  <span class="sb-accent">МЖД · ОПЕРАТИВНАЯ СИСТЕМА v2.6</span>
+  <span class="sb-accent">МЖД · ИНТЕРАКТИВНАЯ КАРТА v2.6</span>
   <span id="sb-time">--:--:-- МСК</span>
   <span id="sb-coords">0.0000, 0.0000</span>
   <span id="sb-count">ОБЪЕКТОВ: 0</span>
@@ -495,6 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const map = L.map('map', { center:[55.7522,37.6156], zoom:11, zoomControl:false, minZoom:8, maxZoom:17 });
 
 let tileLayer;
+let osmNetworkLayer = null;
+
 function applyTheme(dark) {
   isDark = dark;
   document.body.classList.toggle('theme-light', !dark);
@@ -507,6 +513,9 @@ function applyTheme(dark) {
     attribution: '&copy; OpenStreetMap contributors, &copy; CARTO',
     subdomains: 'abcd', maxZoom: 19, opacity: 0.85
   }).addTo(map);
+  if (osmNetworkLayer) {
+    osmNetworkLayer.setStyle({color: dark ? '#d4aa50' : '#7a4e18'});
+  }
   localStorage.setItem('mjd-theme', dark ? 'dark' : 'light');
 }
 
@@ -524,55 +533,55 @@ const LG = {
 // ===== ДАННЫЕ СТАНЦИЙ =====
 const MJD_STATIONS = [
   {name:"Москва-Бутырская (Савёловский вокзал)",lat:55.795758,lon:37.588529,type:"Станция",line:"Савеловское направление"},
-  {name:"Тимирязевская",lat:55.819336,lon:37.575509,type:"Остановка",line:"Савеловское направление"},
-  {name:"Окружная",lat:55.847650,lon:37.574156,type:"Остановка",line:"Савеловское направление"},
-  {name:"Дегунино",lat:55.865540,lon:37.573221,type:"Остановка",line:"Савеловское направление"},
+  {name:"Тимирязевская",lat:55.819336,lon:37.575509,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Окружная",lat:55.847650,lon:37.574156,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Дегунино",lat:55.865540,lon:37.573221,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Бескудниково",lat:55.882192,lon:37.567543,type:"Станция",line:"Савеловское направление"},
-  {name:"Лианозово",lat:55.898881,lon:37.548868,type:"Остановка",line:"Савеловское направление"},
+  {name:"Лианозово",lat:55.898881,lon:37.548868,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Марк",lat:55.904391,lon:37.538297,type:"Станция",line:"Савеловское направление"},
-  {name:"Новодачная",lat:55.924339,lon:37.527707,type:"Остановка",line:"Савеловское направление"},
-  {name:"Долгопрудная",lat:55.939983,lon:37.520025,type:"Остановка",line:"Савеловское направление"},
-  {name:"Водники",lat:55.952556,lon:37.512443,type:"Остановка",line:"Савеловское направление"},
-  {name:"Хлебниково",lat:55.952556,lon:37.512443,type:"Остановка",line:"Савеловское направление"},
-  {name:"Шереметьевская",lat:55.952556,lon:37.512443,type:"Остановка",line:"Савеловское направление"},
-  {name:"Аэропорт Шереметьево Север",lat:55.983294,lon:37.413610,type:"Остановка",line:"Ветка на аэропорт"},
-  {name:"Аэропорт Шереметьево Юг",lat:55.963854,lon:37.415829,type:"Остановка",line:"Ветка на аэропорт"},
+  {name:"Новодачная",lat:55.924339,lon:37.527707,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Долгопрудная",lat:55.939983,lon:37.520025,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Водники",lat:55.952556,lon:37.512443,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Хлебниково",lat:55.952556,lon:37.512443,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Шереметьевская",lat:55.952556,lon:37.512443,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Аэропорт Шереметьево Север",lat:55.983294,lon:37.413610,type:"Остановочный пункт",line:"Ветка на аэропорт"},
+  {name:"Аэропорт Шереметьево Юг",lat:55.963854,lon:37.415829,type:"Остановочный пункт",line:"Ветка на аэропорт"},
   {name:"Лобня",lat:56.013212,lon:37.484646,type:"Станция",line:"Савеловское направление"},
-  {name:"Депо",lat:56.027817,lon:37.486102,type:"Остановка",line:"Савеловское направление"},
-  {name:"Луговая",lat:56.027817,lon:37.486102,type:"Остановка",line:"Савеловское направление"},
-  {name:"Некрасовская",lat:56.074418,lon:37.495879,type:"Остановка",line:"Савеловское направление"},
+  {name:"Депо",lat:56.027817,lon:37.486102,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Луговая",lat:56.027817,lon:37.486102,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Некрасовская",lat:56.074418,lon:37.495879,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Катуар",lat:56.090854,lon:37.504245,type:"Станция",line:"Савеловское направление"},
-  {name:"Трудовая",lat:56.120792,lon:37.515042,type:"Остановка",line:"Савеловское направление"},
+  {name:"Трудовая",lat:56.120792,lon:37.515042,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Икша",lat:56.120792,lon:37.515042,type:"Станция",line:"Савеловское направление"},
-  {name:"Морозки",lat:56.120792,lon:37.515042,type:"Остановка",line:"Савеловское направление"},
-  {name:"Турист",lat:56.243443,lon:37.512105,type:"Остановка",line:"Савеловское направление"},
+  {name:"Морозки",lat:56.120792,lon:37.515042,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Турист",lat:56.243443,lon:37.512105,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Яхрома",lat:56.286491,lon:37.501815,type:"Станция",line:"Савеловское направление"},
   {name:"Дмитров",lat:56.337579,lon:37.510237,type:"Станция",line:"Савеловское направление"},
   {name:"Каналстрой",lat:56.383303,lon:37.515701,type:"Станция",line:"Савеловское направление"},
-  {name:"75 км (им.Барсученко)",lat:56.418938,lon:37.497390,type:"Остановка",line:"Савеловское направление"},
-  {name:"Орудьево",lat:56.445821,lon:37.519955,type:"Остановка",line:"Савеловское направление"},
+  {name:"75 км (им.Барсученко)",lat:56.418938,lon:37.497390,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Орудьево",lat:56.445821,lon:37.519955,type:"Остановочный пункт",line:"Савеловское направление"},
   {name:"Вербилки",lat:56.538995,lon:37.559976,type:"Станция",line:"Савеловское направление"},
   {name:"Соревнование",lat:56.529056,lon:37.430049,type:"Станция",line:"Ветка на Дубну"},
-  {name:"Запрудня",lat:56.560633,lon:37.393002,type:"Остановка",line:"Ветка на Дубну"},
-  {name:"Темпы",lat:56.635402,lon:37.296682,type:"Остановка",line:"Ветка на Дубну"},
-  {name:"Мельдино",lat:56.658677,lon:37.261749,type:"Остановка",line:"Ветка на Дубну"},
-  {name:"119 км",lat:56.678479,lon:37.226737,type:"Остановка",line:"Ветка на Дубну"},
-  {name:"Карманово (122 км)",lat:56.691793,lon:37.192219,type:"Остановка",line:"Ветка на Дубну"},
+  {name:"Запрудня",lat:56.560633,lon:37.393002,type:"Остановочный пункт",line:"Ветка на Дубну"},
+  {name:"Темпы",lat:56.635402,lon:37.296682,type:"Остановочный пункт",line:"Ветка на Дубну"},
+  {name:"Мельдино",lat:56.658677,lon:37.261749,type:"Остановочный пункт",line:"Ветка на Дубну"},
+  {name:"119 км",lat:56.678479,lon:37.226737,type:"Остановочный пункт",line:"Ветка на Дубну"},
+  {name:"Карманово (122 км)",lat:56.691793,lon:37.192219,type:"Остановочный пункт",line:"Ветка на Дубну"},
   {name:"Большая Волга",lat:56.726833,lon:37.136656,type:"Станция",line:"Ветка на Дубну"},
   {name:"Дубна",lat:56.745962,lon:37.201221,type:"Станция",line:"Ветка на Дубну"},
-  {name:"94 км (Никулки)",lat:56.580448,lon:37.567980,type:"Остановка",line:"Савеловское направление"},
-  {name:"Власово",lat:56.645558,lon:37.563482,type:"Остановка",line:"Савеловское направление"},
-  {name:"Талдом",lat:56.722456,lon:37.525980,type:"Остановка",line:"Савеловское направление"},
-  {name:"Лебзино",lat:56.769690,lon:37.419653,type:"Остановка",line:"Савеловское направление"},
-  {name:"124 км",lat:56.809934,lon:37.382958,type:"Остановка",line:"Савеловское направление"},
-  {name:"Савёлово",lat:56.855938,lon:37.377624,type:"Остановка",line:"Савеловское направление"},
-  {name:"Белый городок",lat:56.949232,lon:37.538110,type:"Остановка",line:"Савеловское направление"},
-  {name:"151 км",lat:56.999880,lon:37.566002,type:"Остановка",line:"Савеловское направление"},
-  {name:"Стрельчиха",lat:57.024767,lon:37.589876,type:"Остановка",line:"Савеловское направление"},
-  {name:"163 км",lat:57.089071,lon:37.667803,type:"Остановка",line:"Савеловское направление"},
-  {name:"Скнятино",lat:57.101095,lon:37.687807,type:"Остановка",line:"Савеловское направление"},
-  {name:"Новокатово",lat:57.178169,lon:37.746007,type:"Остановка",line:"Савеловское направление"},
-  {name:"Эра (177 км)",lat:57.203912,lon:37.769694,type:"Остановка",line:"Савеловское направление"},
+  {name:"94 км (Никулки)",lat:56.580448,lon:37.567980,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Власово",lat:56.645558,lon:37.563482,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Талдом",lat:56.722456,lon:37.525980,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Лебзино",lat:56.769690,lon:37.419653,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"124 км",lat:56.809934,lon:37.382958,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Савёлово",lat:56.855938,lon:37.377624,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Белый городок",lat:56.949232,lon:37.538110,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"151 км",lat:56.999880,lon:37.566002,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Стрельчиха",lat:57.024767,lon:37.589876,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"163 км",lat:57.089071,lon:37.667803,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Скнятино",lat:57.101095,lon:37.687807,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Новокатово",lat:57.178169,lon:37.746007,type:"Остановочный пункт",line:"Савеловское направление"},
+  {name:"Эра (177 км)",lat:57.203912,lon:37.769694,type:"Остановочный пункт",line:"Савеловское направление"},
 ];
 
 // ===== ЛИНИИ НА КАРТЕ =====
@@ -600,10 +609,9 @@ function renderStations(list) {
       <div class="mjd-popup-name">${s.name}</div>
       <div class="mjd-popup-type">${s.type || 'МЖД'}</div>
       ${s.line ? `<div class="mjd-popup-row">&#128205; ${s.line}</div>` : ''}
-      <div class="mjd-popup-coords">${(+s.lat).toFixed(5)}, ${(+s.lon).toFixed(5)}</div>
     </div>`;
     L.marker([+s.lat, +s.lon], {icon, interactive: true})
-      .bindTooltip(s.name, {permanent: false, direction: 'right', offset: [8, 0]})
+      .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [8, 0]})
       .bindPopup(popup, {maxWidth: 280, minWidth: 190})
       .addTo(isStation ? LG.mjdStations : LG.mjdStops);
   }
@@ -612,17 +620,59 @@ function renderStations(list) {
 
 // OSM rail network — самый нижний слой, не интерактивный
 if (typeof MJD_OSM_NETWORK !== 'undefined') {
-  const segs = [];
+  const rawSegs = [];
   let cur = [];
   for (const pt of MJD_OSM_NETWORK) {
-    if (pt === null) { if (cur.length >= 2) segs.push(cur); cur = []; }
+    if (pt === null) { if (cur.length >= 2) rawSegs.push(cur); cur = []; }
     else cur.push(pt);
   }
-  if (cur.length >= 2) segs.push(cur);
-  if (segs.length) {
-    L.polyline(segs, {color:'#8b7355', weight:1.5, opacity:0.5, interactive:false, renderer:L.canvas(), smoothFactor:2}).addTo(LG.osmNetwork);
+  if (cur.length >= 2) rawSegs.push(cur);
+
+  // Закрываем разрывы: соединяем концы сегментов, расположенные ближе ~150 м
+  const CELL = 0.0015;
+  const THRESH2 = CELL * CELL;
+  const endGrid = new Map();
+  function cellKey(lat, lon) { return `${Math.round(lat/CELL)}_${Math.round(lon/CELL)}`; }
+  for (let i = 0; i < rawSegs.length; i++) {
+    const e = rawSegs[i][rawSegs[i].length - 1];
+    const k = cellKey(e[0], e[1]);
+    if (!endGrid.has(k)) endGrid.set(k, []);
+    endGrid.get(k).push({idx: i, pt: e});
+  }
+  const bridges = [];
+  for (let i = 0; i < rawSegs.length; i++) {
+    const s = rawSegs[i][0];
+    const sr = Math.round(s[0]/CELL), sc = Math.round(s[1]/CELL);
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      for (const e of (endGrid.get(`${sr+dr}_${sc+dc}`) || [])) {
+        if (e.idx === i) continue;
+        const dlat = s[0]-e.pt[0], dlng = s[1]-e.pt[1];
+        if (dlat*dlat + dlng*dlng < THRESH2) bridges.push([e.pt, s]);
+      }
+    }
+  }
+
+  if (rawSegs.length) {
+    const trackColor = isDark ? '#d4aa50' : '#7a4e18';
+    osmNetworkLayer = L.polyline(rawSegs, {
+      color: trackColor, weight: 2.5, opacity: 0.88,
+      interactive: false, renderer: L.canvas(), smoothFactor: 1
+    }).addTo(LG.osmNetwork);
+    if (bridges.length) {
+      L.polyline(bridges, {
+        color: trackColor, weight: 2.5, opacity: 0.88,
+        interactive: false, renderer: L.canvas(), smoothFactor: 1
+      }).addTo(LG.osmNetwork);
+    }
   }
 }
+
+// Показываем названия станций при zoom >= 11
+function updateZoomLabels() {
+  document.body.classList.toggle('zoom-labels', map.getZoom() >= 11);
+}
+map.on('zoomend', updateZoomLabels);
+updateZoomLabels();
 
 // ===== СТАНЦИИ МЖД НА КАРТЕ =====
 // Немедленный рендер хардкодированных данных — карта работает без сервера

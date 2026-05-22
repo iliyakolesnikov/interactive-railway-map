@@ -47,8 +47,9 @@ GRID = [
 def fetch_ways(bbox):
     mn_la, mn_lo, mx_la, mx_lo = bbox
     bbox_str = f"{mn_la},{mn_lo},{mx_la},{mx_lo}"
+    # Без фильтра по usage — берём все ж/д пути, кроме метро/монорельса/трамвая
     q = f"""[out:json][timeout:110];
-way["railway"="rail"]["usage"~"^(main|branch|regional)$"]({bbox_str});
+way["railway"~"^(rail|narrow_gauge)$"]["service"!~"^(crossover|siding|yard)$"]["tunnel"!="yes"]({bbox_str});
 out geom;"""
     return overpass(q, timeout_http=130)
 

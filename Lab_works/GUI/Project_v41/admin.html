@@ -250,10 +250,13 @@ td.td-line { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-
 .blocked p  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
 .blocked a  { color: var(--accent); }
 </style>
+<script src="config.js" onerror="window._cfgMissing=true"></script>
 </head>
 <body>
 <script>
-if (location.protocol === 'file:') {
+// Если Supabase не настроен — перенаправить на локальный сервер
+const _sbReady = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX');
+if (!_sbReady && location.protocol === 'file:') {
   location.replace('http://localhost:8080/admin.html');
 }
 </script>
@@ -326,19 +329,73 @@ if (location.protocol === 'file:') {
 </main>
 
 <script>
-const API = '/api/stations';
+// ── Абстракция БД: Supabase или локальный server.py ──────────────────────
+const DB = (() => {
+  const sbUrl = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX') ? SUPABASE_URL : null;
+  const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : null;
+
+  if (sbUrl && sbKey) {
+    document.title += ' [Supabase]';
+    const h = { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json' };
+    const base = `${sbUrl}/rest/v1/stations`;
+    return {
+      async getAll() {
+        const r = await fetch(`${base}?select=id,name,lat,lon,type,line&order=id.asc`, { headers: h });
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      },
+      async add(data) {
+        const r = await fetch(base, { method: 'POST', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(data) });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+        const rows = await r.json(); return rows[0];
+      },
+      async update(id, data) {
+        const r = await fetch(`${base}?id=eq.${id}`, { method: 'PATCH', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(data) });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+        const rows = await r.json(); return rows[0];
+      },
+      async remove(id) {
+        const r = await fetch(`${base}?id=eq.${id}`, { method: 'DELETE', headers: h });
+        if (!r.ok) throw new Error(r.statusText);
+      }
+    };
+  }
+
+  // Fallback: локальный server.py
+  const API = '/api/stations';
+  return {
+    async getAll() {
+      const r = await fetch(API); if (!r.ok) throw new Error(r.statusText); return r.json();
+    },
+    async add(data) {
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || r.statusText); } return r.json();
+    },
+    async update(id, data) {
+      const r = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || r.statusText); } return r.json();
+    },
+    async remove(id) {
+      const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error(r.statusText);
+    }
+  };
+})();
+
+// ── Состояние и таблица ───────────────────────────────────────────────────
 let stations = [];
 
 async function loadStations() {
   try {
-    const r = await fetch(API);
-    if (!r.ok) throw new Error(r.statusText);
-    stations = await r.json();
+    stations = await DB.getAll();
     renderTable();
-    showStatus('', '');
   } catch (e) {
     showStatus('Ошибка загрузки: ' + e.message, 'err');
   }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function renderTable() {
@@ -366,40 +423,28 @@ function renderTable() {
   }).join('');
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+// ── Форма ─────────────────────────────────────────────────────────────────
 async function submitForm() {
-  const name = document.getElementById('f-name').value.trim();
-  const lat  = parseFloat(document.getElementById('f-lat').value);
-  const lon  = parseFloat(document.getElementById('f-lon').value);
-  const type = document.getElementById('f-type').value;
-  const line = document.getElementById('f-line').value.trim();
+  const name   = document.getElementById('f-name').value.trim();
+  const lat    = parseFloat(document.getElementById('f-lat').value);
+  const lon    = parseFloat(document.getElementById('f-lon').value);
+  const type   = document.getElementById('f-type').value;
+  const line   = document.getElementById('f-line').value.trim() || null;
   const editId = document.getElementById('edit-id').value;
 
   if (!name) { showStatus('Введите название', 'err'); return; }
   if (isNaN(lat) || isNaN(lon)) { showStatus('Введите корректные координаты', 'err'); return; }
-  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    showStatus('Координаты вне допустимого диапазона', 'err'); return;
-  }
-
-  const body = { name, lat, lon, type, line: line || null };
-  const isEdit = !!editId;
-  const url  = isEdit ? `${API}/${editId}` : API;
-  const method = isEdit ? 'PUT' : 'POST';
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) { showStatus('Координаты вне диапазона', 'err'); return; }
 
   try {
-    const r = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) {
-      const err = await r.json();
-      throw new Error(err.error || r.statusText);
+    const data = { name, lat, lon, type, line };
+    if (editId) {
+      await DB.update(editId, data);
+      showStatus(`Обновлено: ${name}`, 'ok');
+    } else {
+      await DB.add(data);
+      showStatus(`Добавлено: ${name}`, 'ok');
     }
-    showStatus(isEdit ? `Обновлено: ${name}` : `Добавлено: ${name}`, 'ok');
     cancelEdit();
     loadStations();
   } catch (e) {
@@ -411,18 +456,17 @@ function startEdit(id) {
   const s = stations.find(x => x.id === id);
   if (!s) return;
   document.getElementById('edit-id').value = id;
-  document.getElementById('f-name').value = s.name;
-  document.getElementById('f-lat').value  = (+s.lat).toFixed(7);
-  document.getElementById('f-lon').value  = (+s.lon).toFixed(7);
-  document.getElementById('f-type').value = s.type;
-  document.getElementById('f-line').value = s.line || '';
-  document.getElementById('form-title').textContent = 'Редактировать объект';
-  document.getElementById('submit-btn').textContent = 'Сохранить';
+  document.getElementById('f-name').value  = s.name;
+  document.getElementById('f-lat').value   = (+s.lat).toFixed(7);
+  document.getElementById('f-lon').value   = (+s.lon).toFixed(7);
+  document.getElementById('f-type').value  = s.type;
+  document.getElementById('f-line').value  = s.line || '';
+  document.getElementById('form-title').textContent  = 'Редактировать объект';
+  document.getElementById('submit-btn').textContent  = 'Сохранить';
   document.getElementById('cancel-btn').classList.add('visible');
-  // подсветить строку
   document.querySelectorAll('tr.editing').forEach(r => r.classList.remove('editing'));
   const row = document.getElementById(`row-${id}`);
-  if (row) { row.classList.add('editing'); row.scrollIntoView({block:'nearest'}); }
+  if (row) { row.classList.add('editing'); row.scrollIntoView({ block: 'nearest' }); }
   document.getElementById('f-name').focus();
 }
 
@@ -442,30 +486,25 @@ function cancelEdit() {
 async function deleteStation(id, name) {
   if (!confirm(`Удалить «${name}»?`)) return;
   try {
-    const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
-    if (!r.ok) throw new Error(r.statusText);
+    await DB.remove(id);
     showStatus(`Удалено: ${name}`, 'ok');
     loadStations();
   } catch (e) {
-    showStatus('Ошибка удаления: ' + e.message, 'err');
+    showStatus('Ошибка: ' + e.message, 'err');
   }
 }
 
 let statusTimer;
 function showStatus(msg, cls) {
   const el = document.getElementById('status-bar');
-  el.className = cls ? `ok err ${cls}`.split(' ').filter(Boolean).join(' ') : '';
-  el.className = cls;
+  el.className = cls || '';
   el.textContent = msg;
   clearTimeout(statusTimer);
-  if (cls === 'ok') statusTimer = setTimeout(() => { el.className = ''; }, 3000);
+  if (cls === 'ok') statusTimer = setTimeout(() => { el.className = ''; el.textContent = ''; }, 3000);
 }
 
-// Ctrl+Enter / Enter в форме
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey && e.key === 'Enter') || (e.key === 'Enter' && e.target.tagName === 'INPUT')) {
-    submitForm();
-  }
+  if ((e.ctrlKey && e.key === 'Enter') || (e.key === 'Enter' && e.target.tagName === 'INPUT')) submitForm();
   if (e.key === 'Escape') cancelEdit();
 });
 

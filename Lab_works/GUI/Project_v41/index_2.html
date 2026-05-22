@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js" onerror="window._cfgMissing=true"></script>
 <style>
 :root {
   --bg-primary: #0b0d12;
@@ -532,7 +533,7 @@ function applyTheme(dark) {
     subdomains: 'abcd', maxZoom: 19, opacity: 0.85
   }).addTo(map);
   if (osmNetworkLayer) {
-    osmNetworkLayer.setStyle({color: dark ? '#d4aa50' : '#c8a800'});
+    osmNetworkLayer.setStyle({color: '#d4aa50'});
   }
   localStorage.setItem('mjd-theme', dark ? 'dark' : 'light');
 }
@@ -702,7 +703,7 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
   }
 
   if (rawSegs.length) {
-    const trackColor = isDark ? '#d4aa50' : '#c8a800';
+    const trackColor = '#d4aa50';
     osmNetworkLayer = L.polyline(rawSegs, {
       color: trackColor, weight: 2.5, opacity: 0.88,
       interactive: false, renderer: L.canvas(), smoothFactor: 1
@@ -728,13 +729,46 @@ function applyLabelVisibility() {
 map.on('zoomend', applyLabelVisibility);
 
 // ===== СТАНЦИИ МЖД НА КАРТЕ =====
-// Немедленный рендер хардкодированных данных — карта работает без сервера
-renderStations(MJD_STATIONS);
-// Если запущен server.py — подгружаем актуальные данные из БД
-fetch('/api/stations')
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(data => { if (data.length) renderStations(data); })
-  .catch(() => {});
+renderStations(MJD_STATIONS); // мгновенно из встроенного кэша
+
+(async function loadFromDB() {
+  const sbUrl = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX') ? SUPABASE_URL : null;
+  const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : null;
+
+  if (sbUrl && sbKey) {
+    // ── Supabase: работает без локального сервера ──
+    try {
+      const r = await fetch(
+        `${sbUrl}/rest/v1/stations?select=id,name,lat,lon,type,line&order=id.asc`,
+        { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` } }
+      );
+      if (!r.ok) throw new Error(r.statusText);
+      let data = await r.json();
+      if (data.length === 0) {
+        // БД пустая — заполняем начальными данными
+        const seed = MJD_STATIONS.map(({ name, lat, lon, type, line }) => ({ name, lat, lon, type, line }));
+        await fetch(`${sbUrl}/rest/v1/stations`, {
+          method: 'POST',
+          headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify(seed)
+        });
+        const r2 = await fetch(
+          `${sbUrl}/rest/v1/stations?select=id,name,lat,lon,type,line&order=id.asc`,
+          { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` } }
+        );
+        data = await r2.json();
+      }
+      if (data.length) renderStations(data);
+    } catch (e) { console.warn('Supabase:', e.message); }
+    return;
+  }
+
+  // ── Fallback: локальный server.py ──
+  fetch('/api/stations')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => { if (data.length) renderStations(data); })
+    .catch(() => {});
+})();
 
 // ===== ГРАНИЦА МОСКВЫ =====
 fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Россия&polygon_geojson=1&format=json&limit=1',

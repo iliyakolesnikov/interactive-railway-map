@@ -617,7 +617,10 @@ const stopIcon = L.divIcon({
   iconSize: [11, 11], iconAnchor: [5, 5]
 });
 
+const stationMarkers = [];
+
 function renderStations(list) {
+  stationMarkers.length = 0;
   LG.mjdStations.clearLayers();
   LG.mjdStops.clearLayers();
   for (const s of list) {
@@ -628,12 +631,14 @@ function renderStations(list) {
       <div class="mjd-popup-type">${s.type || 'МЖД'}</div>
       ${s.line ? `<div class="mjd-popup-row">&#128205; ${s.line}</div>` : ''}
     </div>`;
-    L.marker([+s.lat, +s.lon], {icon, interactive: true})
+    const m = L.marker([+s.lat, +s.lon], {icon, interactive: true})
       .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [7, 0], className: 'station-label'})
       .bindPopup(popup, {maxWidth: 280, minWidth: 190})
       .addTo(isStation ? LG.mjdStations : LG.mjdStops);
+    stationMarkers.push(m);
   }
   document.getElementById('sb-count').textContent = 'ОБЪЕКТОВ: ' + list.length;
+  applyLabelVisibility();
 }
 
 // OSM rail network — самый нижний слой, не интерактивный
@@ -711,12 +716,16 @@ if (typeof MJD_OSM_NETWORK !== 'undefined') {
   }
 }
 
-// Показываем названия станций при zoom >= 11
-function updateZoomLabels() {
-  document.body.classList.toggle('zoom-labels', map.getZoom() >= 11);
+// Показываем/скрываем названия станций в зависимости от масштаба
+function applyLabelVisibility() {
+  const show = map.getZoom() >= 11;
+  document.body.classList.toggle('zoom-labels', show);
+  stationMarkers.forEach(m => {
+    const tt = m.getTooltip();
+    if (tt && tt._container) tt._container.style.display = show ? '' : 'none';
+  });
 }
-map.on('zoomend', updateZoomLabels);
-updateZoomLabels();
+map.on('zoomend', applyLabelVisibility);
 
 // ===== СТАНЦИИ МЖД НА КАРТЕ =====
 // Немедленный рендер хардкодированных данных — карта работает без сервера

@@ -264,7 +264,7 @@ if (!_sbReady && location.protocol === 'file:') {
   <h1>МЖД · УПРАВЛЕНИЕ СТАНЦИЯМИ</h1>
   <div class="header-right">
     <span id="status-bar"></span>
-    <a href="index_2.html" class="btn-link">← Карта</a>
+    <a href="MGD.html" class="btn-link">← Карта</a>
   </div>
 </header>
 
@@ -441,7 +441,8 @@ async function submitForm() {
       await DB.update(editId, data);
       showStatus(`Обновлено: ${name}`, 'ok');
     } else {
-      await DB.add(data);
+      const nextId = stations.length ? Math.max(...stations.map(s => s.id)) + 1 : 1;
+      await DB.add({ id: nextId, ...data });
       showStatus(`Добавлено: ${name}`, 'ok');
     }
     cancelEdit();

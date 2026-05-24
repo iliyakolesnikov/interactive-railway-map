@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МЖД · ИНТЕРАКТИВНАЯ КАРТА ЖЕЛЕЗНЫХ ДОРОГ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js" onerror="window._cfgMissing=true"></script>
+<style>
+:root {
+  --bg-primary: #0b0d12;
+  --bg-secondary: #0e1118;
+  --bg-tertiary: #080c12;
+  --border-color: #1e2535;
+  --border-active: #e04030;
+  --text-primary: #c0c8d0;
+  --text-secondary: #8090a0;
+  --text-muted: #3a4558;
+  --accent: #e04030;
+  --accent-glow: rgba(224,64,48,.3);
+  --live-color: #27ae60;
+  --shadow: rgba(0,0,0,.6);
+  --tile-url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  --section-text-light: #2d3748;
+  --section-text-dark: #e2e8f0;
+  --section-text-color: var(--section-text-dark);
+}
+body.theme-light {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8eaed;
+  --border-color: #d0d8e4;
+  --border-active: #c0281a;
+  --text-primary: #1a2030;
+  --text-secondary: #4a5870;
+  --text-muted: #8090a0;
+  --accent: #c0281a;
+  --accent-glow: rgba(192,40,26,.2);
+  --live-color: #1a8040;
+  --shadow: rgba(0,0,0,.2);
+  --section-text-color: var(--section-text-light);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+}
+/* SIDEBAR */
+#sidebar {
+  width: 290px;
+  min-width: 290px;
+  max-width: 650px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 500;
+}
+.sidebar-left,
+.sidebar-right {
+  position: relative;
+}
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: rgba(128, 144, 160, 0.12);
+  transition: background 0.2s ease;
+  z-index: 650;
+}
+.resize-handle:hover {
+  background: rgba(224, 64, 48, 0.3);
+}
+#left-resize-handle {
+  right: -3px;
+}
+body.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+body.resizing #map {
+  pointer-events: none;
+}
+#sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+#sidebar-header h1 {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+#sidebar-header .ver {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+/* Поиск */
+#search-wrap {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+#search-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  outline: none;
+  border-radius: 0;
+}
+#search-input:focus {
+  border-color: var(--border-active);
+}
+#search-input::placeholder { color: var(--text-muted); }
+#search-results {
+  position: absolute;
+  top: 100%;
+  left: 16px;
+  right: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 600;
+  display: none;
+}
+#search-results.show { display: block; }
+.sr-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+}
+.sr-item:last-child { border-bottom: none; }
+.sr-item:hover { background: var(--accent-glow); }
+.sr-item .sr-name { font-weight: 600; }
+.sr-item .sr-type { font-size: 11px; color: var(--text-muted); }
+/* Фильтры */
+#filters-wrap {
+  padding: 12px 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+#filters-wrap::-webkit-scrollbar { width: 3px; }
+#filters-wrap::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+.filter-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.filter-item input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.filter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+/* Легенда — закреплена вверху */
+#legend-wrap {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--bg-secondary);
+}
+.legend-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+.legend-color {
+  display: inline-block;
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+#radial-legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Фильтры — выпадающий список */
+#filters-wrap {
+  padding-top: 0;
+}
+.filters-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 0;
+}
+.filters-toggle:hover { border-color: var(--border-active); }
+.filters-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.filters-dropdown.open {
+  max-height: 600px;
+  padding-bottom: 12px;
+}
+/* Названия станций — показывать только при zoom >= 11 */
+body:not(.zoom-labels) .leaflet-tooltip-permanent {
+  display: none !important;
+}
+/* Надпись станции: без рамки, как label на карте */
+.station-label.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 2px !important;
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  text-shadow:
+    0 0 3px var(--bg-secondary),
+    0 0 3px var(--bg-secondary),
+    1px 0 2px var(--bg-secondary),
+   -1px 0 2px var(--bg-secondary) !important;
+  white-space: nowrap !important;
+}
+.station-label.leaflet-tooltip::before { display: none !important; }
+/* Тултипы ж/д линий — через Leaflet bindTooltip, см. JS */
+/* КАРТА */
+#map-wrap {
+  flex: 1;
+  position: relative;
+}
+#map { width: 100%; height: 100%; }
+/* Кнопки управления картой */
+#zoom-ctrl {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  transition: flex-direction 0.3s ease, transform 0.3s ease;
+}
+#zoom-ctrl.map-controls-horizontal {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+}
+.zb {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Share Tech Mono', monospace;
+}
+.zb:hover { border-color: var(--border-active); }
+.zb:first-child { border-radius: 4px 4px 0 0; }
+.zb:last-child { border-radius: 0 0 4px 4px; }
+/* Кнопка перехода в админку */
+#admin-btn {
+  position: absolute;
+  bottom: 36px;
+  right: 16px;
+  z-index: 400;
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.4px;
+  transition: border-color .2s, color .2s;
+}
+#admin-btn:hover { border-color: var(--border-active); color: var(--text-primary); }
+/* Статус-строка */
+#statusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 700;
+  gap: 20px;
+}
+#statusbar .sb-accent { color: var(--accent); }
+#statusbar .sb-live { color: var(--live-color); }
+/* Тултипы Leaflet */
+.leaflet-tooltip {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 0 !important;
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 12px !important;
+}
+/* Попапы Leaflet */
+.leaflet-popup-content-wrapper {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 4px 16px var(--shadow) !important;
+  color: var(--text-primary) !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  font-family: 'Rajdhani', sans-serif !important;
+}
+.leaflet-popup-tip-container { display: none !important; }
+.leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+  font-size: 18px !important;
+  top: 6px !important;
+  right: 8px !important;
+}
+.leaflet-popup-close-button:hover { color: var(--accent) !important; }
+.mjd-popup { min-width: 190px; padding: 12px 32px 12px 14px; }
+.mjd-popup-name { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.3; margin-bottom: 4px; }
+.mjd-popup-type { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.mjd-popup-row { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.mjd-popup-coords { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+/* Leaflet control zoom — скрыть стандартный */
+.leaflet-control-zoom { display: none; }
+.leaflet-div-icon.station-marker,
+.leaflet-div-icon.mcc-marker {
+  background: transparent;
+  border: none;
+}
+.station-marker-shell,
+.mcc-marker-shell {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.station-marker-shell::after,
+.mcc-marker-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.station-marker-visual {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a03020;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.mcc-marker-visual {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1a5898;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+.pass-marker-visual {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e67e22;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.node-marker-visual {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #c0392b;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+/* Станции и остановки МЖД */
+.leaflet-div-icon.mjd-icon { background: transparent; border: none; }
+.mjd-stop-icon circle:last-child { fill: #a0aec0; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar-left">
+  <div id="sidebar-header">
+    <h1>МЖД · ИНТЕРАКТИВНАЯ КАРТА ЖЕЛЕЗНЫХ ДОРОГ</h1>
+    <div class="ver">v2.6</div>
+  </div>
+  <div id="legend-wrap">
+    <div class="legend-title">Легенда</div>
+    <div class="legend-item"><span class="filter-dot" style="background:#d4aa50"></span>Пути</div>
+    <div class="legend-item"><svg width="12" height="12" viewBox="0 0 12 12" style="flex-shrink:0"><circle cx="6" cy="6" r="5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="6" cy="6" r="2" fill="rgba(255,255,255,0.9)"/></svg>Станция</div>
+    <div class="legend-item"><svg width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="8,1 15,8 13,8 13,15 3,15 3,8 1,8" fill="#7b241c" stroke="rgba(255,255,255,0.8)" stroke-width="1" stroke-linejoin="round"/><rect x="6" y="10" width="4" height="5" fill="rgba(255,255,255,0.85)"/></svg>Вокзал</div>
+  </div>
+  <div id="search-wrap">
+    <input id="search-input" type="text" placeholder="Поиск станции…" autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="filters-wrap">
+    <button class="filters-toggle" id="filters-toggle">Фильтры ▼</button>
+    <div class="filters-dropdown" id="filters-dropdown">
+    <div class="filter-title" style="padding:8px 0 4px">Фильтры</div>
+    <label class="filter-item"><input type="checkbox" checked data-layer="osmNetwork"><span class="filter-dot" style="background:#8b7355"></span>Пути</label>
+    <label class="filter-item"><input type="checkbox" checked data-layer="mjdStations"><svg width="10" height="10" viewBox="0 0 10 10" style="flex-shrink:0"><circle cx="5" cy="5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5" cy="5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>Станции</label>
+    </div>
+  </div>
+  <div class="resize-handle" id="left-resize-handle" aria-hidden="true"></div>
+</div>
+
+<!-- MAP -->
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="zoom-ctrl">
+    <button class="zb" id="zin" title="Приблизить">+</button>
+    <button class="zb" id="zout" title="Отдалить">−</button>
+    <button class="zb" id="zreset" title="Сбросить вид">⌂</button>
+    <button class="zb" id="theme-toggle" title="Сменить тему">☾</button>
+  </div>
+</div>
+<a id="admin-btn" href="admin.html" title="Управление станциями">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="1" y="1" width="12" height="9" rx="1"/>
+    <line x1="4" y1="12" x2="10" y2="12"/>
+    <line x1="7" y1="10" x2="7" y2="12"/>
+  </svg>
+  Таблица
+</a>
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <span class="sb-accent">МЖД · ИНТЕРАКТИВНАЯ КАРТА v2.6</span>
+  <span id="sb-time">--:--:-- МСК</span>
+  <span id="sb-coords">0.0000, 0.0000</span>
+  <span id="sb-count">ОБЪЕКТОВ: 0</span>
+  <span id="sb-zoom">МАСШТАБ: 11</span>
+</div>
+
+<script src="mjd_osm_network.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// ===== КАРТА =====
+const map = L.map('map', { center:[55.7522,37.6156], zoom:11, zoomControl:false, minZoom:8, maxZoom:17 });
+
+let tileLayer;
+let osmNetworkLayer = null;
+
+function applyTheme(dark) {
+  isDark = dark;
+  document.body.classList.toggle('theme-light', !dark);
+  document.getElementById('theme-toggle').textContent = dark ? '☾' : '☀';
+  if (tileLayer) map.removeLayer(tileLayer);
+  const url = dark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  tileLayer = L.tileLayer(url, {
+    attribution: '&copy; OpenStreetMap contributors, &copy; CARTO',
+    subdomains: 'abcd', maxZoom: 19, opacity: 0.85
+  }).addTo(map);
+  if (osmNetworkLayer) {
+    osmNetworkLayer.setStyle({color: '#d4aa50'});
+  }
+  localStorage.setItem('mjd-theme', dark ? 'dark' : 'light');
+}
+
+let isDark = true;
+const saved = localStorage.getItem('mjd-theme');
+applyTheme(saved !== 'light');
+
+// ===== СЛОИ =====
+const LG = {
+  osmNetwork: L.layerGroup().addTo(map),
+  mjdStations: L.layerGroup().addTo(map),
+};
+
+// ===== ЛИНИИ НА КАРТЕ =====
+const RAILWAY_LINES = []; // для кликабельности
+
+// ===== РЕНДЕР СТАНЦИЙ И ОСТАНОВОК =====
+const stationIcon = L.divIcon({
+  className: 'mjd-icon',
+  html: '<svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.5" fill="#e04030" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><circle cx="5.5" cy="5.5" r="1.8" fill="rgba(255,255,255,0.9)"/></svg>',
+  iconSize: [11, 11], iconAnchor: [5, 5]
+});
+const vokzalIcon = L.divIcon({
+  className: 'mjd-icon',
+  html: '<svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 13,8 13,15 3,15 3,8 1,8" fill="#7b241c" stroke="rgba(255,255,255,0.8)" stroke-width="1" stroke-linejoin="round"/><rect x="6" y="10" width="4" height="5" fill="rgba(255,255,255,0.85)"/></svg>',
+  iconSize: [16, 16], iconAnchor: [8, 8]
+});
+function isVokzal(s) {
+  return s.type === 'Вокзал' || (s.name && s.name.toLowerCase().includes('вокзал'));
+}
+const stationMarkers = [];
+let stationList = [];
+
+function renderStations(list) {
+  stationList = list;
+  stationMarkers.length = 0;
+  LG.mjdStations.clearLayers();
+  for (const s of list) {
+    const popup = `<div class="mjd-popup">
+      <div class="mjd-popup-name">${s.name}</div>
+      <div class="mjd-popup-type">${s.type || 'МЖД'}</div>
+      ${s.line ? `<div class="mjd-popup-row">&#128205; ${s.line}</div>` : ''}
+    </div>`;
+    const m = L.marker([+s.lat, +s.lon], {icon: isVokzal(s) ? vokzalIcon : stationIcon, interactive: true})
+      .bindTooltip(s.name, {permanent: true, direction: 'right', offset: [7, 0], className: 'station-label'})
+      .bindPopup(popup, {maxWidth: 280, minWidth: 190})
+      .addTo(LG.mjdStations);
+    stationMarkers.push(m);
+  }
+  document.getElementById('sb-count').textContent = 'ОБЪЕКТОВ: ' + list.length;
+  applyLabelVisibility();
+}
+
+// OSM rail network — самый нижний слой, не интерактивный
+if (typeof MJD_OSM_NETWORK !== 'undefined') {
+  const rawSegs = [];
+  let cur = [];
+  for (const pt of MJD_OSM_NETWORK) {
+    if (pt === null) { if (cur.length >= 2) rawSegs.push(cur); cur = []; }
+    else cur.push(pt);
+  }
+  if (cur.length >= 2) rawSegs.push(cur);
+
+  // Закрываем разрывы путей: direction-aware bridging до ~600 м
+  // LON_K — поправка масштаба долготы на широте Москвы (cos 55°)
+  const LON_K = 0.573;
+  const BCELL = 0.006; // ячейка сетки ~670 м по широте
+  const BTHRESH2 = BCELL * BCELL; // порог расстояния²
+  const COS_MIN = 0.55; // мин. косинус угла (~57°) для проверки направления
+
+  function normDir(from, to) {
+    const dlat = to[0] - from[0];
+    const dlng = (to[1] - from[1]) * LON_K;
+    const l = Math.sqrt(dlat * dlat + dlng * dlng);
+    return l > 1e-9 ? [dlat / l, dlng / l] : null;
+  }
+  // Направления на конце и начале каждого сегмента
+  const endDirs = rawSegs.map(s => s.length >= 2 ? normDir(s[s.length - 2], s[s.length - 1]) : null);
+  const startDirs = rawSegs.map(s => s.length >= 2 ? normDir(s[0], s[1]) : null);
+
+  // Пространственный индекс концов сегментов
+  const endIdx = new Map();
+  for (let i = 0; i < rawSegs.length; i++) {
+    const e = rawSegs[i][rawSegs[i].length - 1];
+    const k = `${Math.round(e[0] / BCELL)}_${Math.round(e[1] / BCELL)}`;
+    if (!endIdx.has(k)) endIdx.set(k, []);
+    endIdx.get(k).push(i);
+  }
+
+  const bridges = [];
+  for (let j = 0; j < rawSegs.length; j++) {
+    const s = rawSegs[j][0];
+    const sr = Math.round(s[0] / BCELL), sc = Math.round(s[1] / BCELL);
+    let bestD2 = BTHRESH2, bestI = -1;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      for (const i of (endIdx.get(`${sr + dr}_${sc + dc}`) || [])) {
+        if (i === j) continue;
+        const e = rawSegs[i][rawSegs[i].length - 1];
+        const dlat = s[0] - e[0], dlng = (s[1] - e[1]) * LON_K;
+        const d2 = dlat * dlat + dlng * dlng;
+        if (d2 >= bestD2) continue;
+        // Проверяем: мост должен продолжать направление обоих сегментов
+        const bDir = normDir(e, s);
+        if (!bDir || !endDirs[i] || !startDirs[j]) continue;
+        if (endDirs[i][0] * bDir[0] + endDirs[i][1] * bDir[1] < COS_MIN) continue;
+        if (startDirs[j][0] * bDir[0] + startDirs[j][1] * bDir[1] < COS_MIN) continue;
+        bestD2 = d2;
+        bestI = i;
+      }
+    }
+    if (bestI !== -1) bridges.push([rawSegs[bestI][rawSegs[bestI].length - 1], s]);
+  }
+
+  if (rawSegs.length) {
+    const trackColor = '#d4aa50';
+    osmNetworkLayer = L.polyline(rawSegs, {
+      color: trackColor, weight: 2.5, opacity: 0.88,
+      interactive: false, renderer: L.canvas(), smoothFactor: 1
+    }).addTo(LG.osmNetwork);
+    if (bridges.length) {
+      L.polyline(bridges, {
+        color: trackColor, weight: 2.5, opacity: 0.88,
+        interactive: false, renderer: L.canvas(), smoothFactor: 1
+      }).addTo(LG.osmNetwork);
+    }
+  }
+}
+
+// Показываем/скрываем названия станций в зависимости от масштаба
+function applyLabelVisibility() {
+  const show = map.getZoom() >= 11;
+  document.body.classList.toggle('zoom-labels', show);
+  stationMarkers.forEach(m => {
+    const tt = m.getTooltip();
+    if (tt && tt._container) tt._container.style.display = show ? '' : 'none';
+  });
+}
+map.on('zoomend', applyLabelVisibility);
+
+// ===== СТАНЦИИ МЖД НА КАРТЕ =====
+(async function loadFromDB() {
+  const sbUrl = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX') ? SUPABASE_URL : null;
+  const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : null;
+
+  if (sbUrl && sbKey) {
+    // ── Supabase: работает без локального сервера ──
+    try {
+      const r = await fetch(
+        `${sbUrl}/rest/v1/stations?select=id,name,lat,lon,type,line&order=id.asc`,
+        { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` } }
+      );
+      if (!r.ok) throw new Error(r.statusText);
+      const data = await r.json();
+      if (data.length) renderStations(data);
+    } catch (e) { console.warn('Supabase:', e.message); }
+  }
+})();
+
+// ===== ГРАНИЦА МОСКВЫ =====
+fetch('https://nominatim.openstreetmap.org/search?q=Москва+город,Россия&polygon_geojson=1&format=json&limit=1',
+  {headers:{'Accept-Language':'ru'}})
+  .then(r=>r.json())
+  .then(data => {
+    if(data[0]?.geojson) {
+      L.geoJSON(data[0].geojson, {style:{color:'#d0d8e4',weight:3.5,fillOpacity:0,opacity:0.9}}).addTo(map);
+    }
+  })
+  .catch(()=>{});
+
+// ===== ПОИСК СТАНЦИЙ =====
+(function() {
+  const input = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+
+  function hideResults() {
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { hideResults(); return; }
+    const matches = stationList
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => s.name.toLowerCase().includes(q))
+    if (!matches.length) { hideResults(); return; }
+    results.innerHTML = matches.map(({ s, i }) =>
+      `<div class="sr-item" data-idx="${i}">
+        <div class="sr-name">${s.name}</div>
+        <div class="sr-type">${s.line || s.type || ''}</div>
+      </div>`
+    ).join('');
+    results.classList.add('show');
+  });
+
+  results.addEventListener('click', e => {
+    const item = e.target.closest('.sr-item');
+    if (!item) return;
+    const idx = +item.dataset.idx;
+    const m = stationMarkers[idx];
+    if (!m) return;
+    map.setView(m.getLatLng(), Math.max(map.getZoom(), 13));
+    m.openPopup();
+    input.value = stationList[idx].name;
+    hideResults();
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#search-wrap')) hideResults();
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { hideResults(); input.blur(); }
+  });
+})();
+
+// ===== ФИЛЬТРЫ =====
+const LAYER_MAP = {
+  osmNetwork: 'osmNetwork',
+  mjdStations: 'mjdStations',
+};
+function saveFilters() {
+  const state = {};
+  document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
+    if (cb.dataset.layer) state[cb.dataset.layer] = cb.checked;
+  });
+  localStorage.setItem('mjd-filters', JSON.stringify(state));
+}
+
+function applyFilters() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('mjd-filters') || '{}'); } catch(e) {}
+  document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
+    const key = cb.dataset.layer;
+    if (!key || !(key in saved)) return;
+    cb.checked = saved[key];
+    const layers = LAYER_MAP[key];
+    if (!layers) return;
+    const arr = Array.isArray(layers) ? layers : [layers];
+    arr.forEach(lg => {
+      if (cb.checked) LG[lg].addTo(map);
+      else map.removeLayer(LG[lg]);
+    });
+  });
+}
+
+document.querySelectorAll('#filters-wrap input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const key = cb.dataset.layer;
+    if (!key || !LAYER_MAP[key]) { saveFilters(); return; }
+    const layers = LAYER_MAP[key];
+    const arr = Array.isArray(layers) ? layers : [layers];
+    arr.forEach(lg => {
+      if (cb.checked) LG[lg].addTo(map);
+      else map.removeLayer(LG[lg]);
+    });
+    saveFilters();
+  });
+});
+applyFilters();
+
+// Выпадающий список фильтров
+document.getElementById('filters-toggle').addEventListener('click', () => {
+  const dd = document.getElementById('filters-dropdown');
+  const btn = document.getElementById('filters-toggle');
+  dd.classList.toggle('open');
+  btn.textContent = dd.classList.contains('open') ? 'Фильтры ▲' : 'Фильтры ▼';
+});
+
+// ===== КНОПКИ КАРТЫ =====
+document.getElementById('zin').addEventListener('click', () => map.zoomIn());
+document.getElementById('zout').addEventListener('click', () => map.zoomOut());
+document.getElementById('zreset').addEventListener('click', () => map.setView([55.7522,37.6156],11));
+document.getElementById('theme-toggle').addEventListener('click', () => applyTheme(!isDark));
+
+// ===== РЕСАЙЗ БОКОВЫХ ПАНЕЛЕЙ =====
+function setupSidebarResize() {
+  const left = document.getElementById('sidebar');
+  const leftHandle = document.getElementById('left-resize-handle');
+  const minWidth = 240;
+  const maxWidth = 650;
+
+  function bindHandle(handle, panel, side) {
+    handle.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      const startX = event.clientX;
+      const startWidth = panel.getBoundingClientRect().width;
+      document.body.classList.add('resizing');
+
+      function onMove(moveEvent) {
+        const deltaX = moveEvent.clientX - startX;
+        const rawWidth = side === 'left' ? startWidth + deltaX : startWidth - deltaX;
+        const nextWidth = Math.max(minWidth, Math.min(maxWidth, rawWidth));
+        panel.style.width = `${nextWidth}px`;
+        panel.style.minWidth = `${nextWidth}px`;
+      }
+
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('resizing');
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  bindHandle(leftHandle, left, 'left');
+}
+setupSidebarResize();
+
+// ===== СТАТУС-СТРОКА =====
+function mskTime() {
+  const now = new Date();
+  // МСК = UTC+3
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  const msk = new Date(utc + 3*3600000);
+  return msk.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function updateStatus() {
+  document.getElementById('sb-time').textContent = mskTime() + ' МСК';
+}
+setInterval(updateStatus, 1000);
+updateStatus();
+
+map.on('mousemove', e => {
+  document.getElementById('sb-coords').textContent = e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4);
+});
+map.on('zoomend', () => {
+  document.getElementById('sb-zoom').textContent = 'МАСШТАБ: '+map.getZoom();
+});
+});
+</script>
+</body>
+</html>

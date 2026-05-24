@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МЖД · Управление станциями</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8eaed;
+  --border-color: #d0d8e4;
+  --border-active: #c0281a;
+  --text-primary: #1a2030;
+  --text-secondary: #4a5870;
+  --text-muted: #8090a0;
+  --accent: #c0281a;
+  --accent-glow: rgba(192,40,26,.1);
+  --live-color: #1a8040;
+  --danger: #c0281a;
+  --danger-glow: rgba(192,40,26,.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h1 {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-link {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.btn-link:hover { border-color: var(--border-active); color: var(--text-primary); }
+#status-bar {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 2px;
+  display: none;
+}
+#status-bar.ok  { background: rgba(39,174,96,.15); color: var(--live-color); border: 1px solid rgba(39,174,96,.3); display:block; }
+#status-bar.err { background: var(--danger-glow); color: #e04030; border: 1px solid rgba(224,64,48,.3); display:block; }
+
+/* MAIN */
+main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 60px; }
+
+/* FORM */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.card-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
+  gap: 10px;
+  align-items: end;
+}
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+}
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.form-field input,
+.form-field select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  padding: 7px 10px;
+  outline: none;
+  border-radius: 0;
+  width: 100%;
+}
+.form-field input:focus,
+.form-field select:focus { border-color: var(--border-active); }
+.form-field input::placeholder { color: var(--text-muted); }
+.form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border: 1px solid;
+  cursor: pointer;
+  border-radius: 0;
+  letter-spacing: 0.5px;
+  transition: background .15s, border-color .15s;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #c0281a; border-color: #c0281a; }
+.btn-cancel {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  display: none;
+}
+.btn-cancel:hover { border-color: var(--accent); color: var(--text-primary); }
+.btn-cancel.visible { display: block; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background .1s;
+}
+tbody tr:hover { background: rgba(255,255,255,.02); }
+tbody tr.editing { background: rgba(224,64,48,.07); }
+td {
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+td.td-id { color: var(--text-muted); font-family: 'Share Tech Mono', monospace; font-size: 11px; }
+td.td-name { color: var(--text-primary); font-weight: 600; }
+td.td-type {}
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 2px;
+}
+.type-station { background: rgba(224,64,48,.2); color: #e04030; border: 1px solid rgba(224,64,48,.3); }
+.type-stop    { background: rgba(74,85,104,.3); color: #a0aec0; border: 1px solid rgba(74,85,104,.4); }
+td.td-coords { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+td.td-line { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-actions { white-space: nowrap; }
+.btn-sm {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color .15s, color .15s;
+  margin-right: 4px;
+}
+.btn-sm:hover { border-color: var(--border-active); color: var(--text-primary); }
+.btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
+.empty-row td {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 24px;
+}
+#count-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.table-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center;
+}
+.blocked h2 { font-size: 16px; color: var(--accent); letter-spacing: 1px; }
+.blocked p  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.blocked a  { color: var(--accent); }
+</style>
+<script src="config.js" onerror="window._cfgMissing=true"></script>
+</head>
+<body>
+<script>
+// Если Supabase не настроен — перенаправить на локальный сервер
+const _sbReady = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX');
+if (!_sbReady && location.protocol === 'file:') {
+  location.replace('http://localhost:8080/admin.html');
+}
+</script>
+<header>
+  <h1>МЖД · УПРАВЛЕНИЕ СТАНЦИЯМИ</h1>
+  <div class="header-right">
+    <span id="status-bar"></span>
+    <a href="index_2.html" class="btn-link">← Карта</a>
+  </div>
+</header>
+
+<main>
+  <!-- ФОРМА -->
+  <div class="card">
+    <div class="card-title" id="form-title">Добавить станцию / остановку</div>
+    <input type="hidden" id="edit-id" value="">
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Название</label>
+        <input id="f-name" type="text" placeholder="Москва-Бутырская">
+      </div>
+      <div class="form-field">
+        <label>Тип</label>
+        <select id="f-type">
+          <option value="Станция">Станция</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Широта</label>
+        <input id="f-lat" type="number" step="0.0000001" placeholder="55.7958">
+      </div>
+      <div class="form-field">
+        <label>Долгота</label>
+        <input id="f-lon" type="number" step="0.0000001" placeholder="37.5885">
+      </div>
+      <div class="form-field">
+        <label>Линия (необязательно)</label>
+        <input id="f-line" type="text" placeholder="Савеловское направление">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">Добавить</button>
+      <button class="btn btn-cancel" id="cancel-btn" onclick="cancelEdit()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- ТАБЛИЦА -->
+  <div class="card">
+    <div class="table-header">
+      <div class="card-title" style="margin-bottom:0">Все объекты</div>
+      <span id="count-badge">загрузка...</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Координаты</th>
+            <th>Линия</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── Абстракция БД: Supabase или локальный server.py ──────────────────────
+const DB = (() => {
+  const sbUrl = typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('XXXX') ? SUPABASE_URL : null;
+  const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : null;
+
+  if (sbUrl && sbKey) {
+    document.title += ' [Supabase]';
+    const h = { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json' };
+    const base = `${sbUrl}/rest/v1/stations`;
+    return {
+      async getAll() {
+        const r = await fetch(`${base}?select=id,name,lat,lon,type,line&order=id.asc`, { headers: h });
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      },
+      async add(data) {
+        const r = await fetch(base, { method: 'POST', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(data) });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+        const rows = await r.json(); return rows[0];
+      },
+      async update(id, data) {
+        const r = await fetch(`${base}?id=eq.${id}`, { method: 'PATCH', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(data) });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+        const rows = await r.json(); return rows[0];
+      },
+      async remove(id) {
+        const r = await fetch(`${base}?id=eq.${id}`, { method: 'DELETE', headers: h });
+        if (!r.ok) throw new Error(r.statusText);
+      }
+    };
+  }
+
+  // Fallback: локальный server.py
+  const API = '/api/stations';
+  return {
+    async getAll() {
+      const r = await fetch(API); if (!r.ok) throw new Error(r.statusText); return r.json();
+    },
+    async add(data) {
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || r.statusText); } return r.json();
+    },
+    async update(id, data) {
+      const r = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || r.statusText); } return r.json();
+    },
+    async remove(id) {
+      const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error(r.statusText);
+    }
+  };
+})();
+
+// ── Состояние и таблица ───────────────────────────────────────────────────
+let stations = [];
+
+async function loadStations() {
+  try {
+    stations = await DB.getAll();
+    renderTable();
+  } catch (e) {
+    showStatus('Ошибка загрузки: ' + e.message, 'err');
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  document.getElementById('count-badge').textContent = `Объектов: ${stations.length}`;
+  if (!stations.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
+    return;
+  }
+  tbody.innerHTML = stations.map(s => {
+    const badge = s.type === 'Станция'
+      ? '<span class="type-badge type-station">Станция</span>'
+      : `<span class="type-badge type-stop">${esc(s.type)}</span>`;
+    return `<tr id="row-${s.id}">
+      <td class="td-id">${s.id}</td>
+      <td class="td-name">${esc(s.name)}</td>
+      <td class="td-type">${badge}</td>
+      <td class="td-coords">${(+s.lat).toFixed(5)},&nbsp;${(+s.lon).toFixed(5)}</td>
+      <td class="td-line">${esc(s.line || '—')}</td>
+      <td class="td-actions">
+        <button class="btn-sm" onclick="startEdit(${s.id})">Изм.</button>
+        <button class="btn-sm danger" onclick="deleteStation(${s.id}, '${esc(s.name)}')">Удалить</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Форма ─────────────────────────────────────────────────────────────────
+async function submitForm() {
+  const name   = document.getElementById('f-name').value.trim();
+  const lat    = parseFloat(document.getElementById('f-lat').value);
+  const lon    = parseFloat(document.getElementById('f-lon').value);
+  const type   = document.getElementById('f-type').value;
+  const line   = document.getElementById('f-line').value.trim() || null;
+  const editId = document.getElementById('edit-id').value;
+
+  if (!name) { showStatus('Введите название', 'err'); return; }
+  if (isNaN(lat) || isNaN(lon)) { showStatus('Введите корректные координаты', 'err'); return; }
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) { showStatus('Координаты вне диапазона', 'err'); return; }
+
+  try {
+    const data = { name, lat, lon, type, line };
+    if (editId) {
+      await DB.update(editId, data);
+      showStatus(`Обновлено: ${name}`, 'ok');
+    } else {
+      await DB.add(data);
+      showStatus(`Добавлено: ${name}`, 'ok');
+    }
+    cancelEdit();
+    loadStations();
+  } catch (e) {
+    showStatus('Ошибка: ' + e.message, 'err');
+  }
+}
+
+function startEdit(id) {
+  const s = stations.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-name').value  = s.name;
+  document.getElementById('f-lat').value   = (+s.lat).toFixed(7);
+  document.getElementById('f-lon').value   = (+s.lon).toFixed(7);
+  document.getElementById('f-type').value  = s.type;
+  document.getElementById('f-line').value  = s.line || '';
+  document.getElementById('form-title').textContent  = 'Редактировать объект';
+  document.getElementById('submit-btn').textContent  = 'Сохранить';
+  document.getElementById('cancel-btn').classList.add('visible');
+  document.querySelectorAll('tr.editing').forEach(r => r.classList.remove('editing'));
+  const row = document.getElementById(`row-${id}`);
+  if (row) { row.classList.add('editing'); row.scrollIntoView({ block: 'nearest' }); }
+  document.getElementById('f-name').focus();
+}
+
+function cancelEdit() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-name').value  = '';
+  document.getElementById('f-lat').value   = '';
+  document.getElementById('f-lon').value   = '';
+  document.getElementById('f-type').value  = 'Станция';
+  document.getElementById('f-line').value  = '';
+  document.getElementById('form-title').textContent = 'Добавить станцию / остановку';
+  document.getElementById('submit-btn').textContent = 'Добавить';
+  document.getElementById('cancel-btn').classList.remove('visible');
+  document.querySelectorAll('tr.editing').forEach(r => r.classList.remove('editing'));
+}
+
+async function deleteStation(id, name) {
+  if (!confirm(`Удалить «${name}»?`)) return;
+  try {
+    await DB.remove(id);
+    showStatus(`Удалено: ${name}`, 'ok');
+    loadStations();
+  } catch (e) {
+    showStatus('Ошибка: ' + e.message, 'err');
+  }
+}
+
+let statusTimer;
+function showStatus(msg, cls) {
+  const el = document.getElementById('status-bar');
+  el.className = cls || '';
+  el.textContent = msg;
+  clearTimeout(statusTimer);
+  if (cls === 'ok') statusTimer = setTimeout(() => { el.className = ''; el.textContent = ''; }, 3000);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey && e.key === 'Enter') || (e.key === 'Enter' && e.target.tagName === 'INPUT')) submitForm();
+  if (e.key === 'Escape') cancelEdit();
+});
+
+loadStations();
+</script>
+</body>
+</html>

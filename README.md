@@ -74,8 +74,4 @@ const SUPABASE_KEY = 'your-anon-key';
 | Фронтенд | Vanilla JS, без фреймворков и сборки |
 | Шрифты | Rajdhani, Share Tech Mono (Google Fonts) |
 
-## Репозиторий
 
-```
-https://github.com/iliyakolesnikov/MGD
-```

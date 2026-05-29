@@ -25,9 +25,10 @@
 git clone https://github.com/iliyakolesnikov/interactive-railway-map.git
 ```
 
-2. Откройте `Project_v5/MGD.html` в любом браузере.
+2. Откройте `MGD.html` в любом браузере.
 
 > База данных уже подключена — никакой дополнительной настройки не требуется.
+
 
 ## Структура проекта
 
